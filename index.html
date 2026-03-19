@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Programa Oficial TECMA | Política Social T-MEC</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="background-stage" aria-hidden="true">
+      <div class="diagonal-band band-one"></div>
+      <div class="diagonal-band band-two"></div>
+      <div class="map-glow"></div>
+    </div>
+
+    <main class="app-shell">
+      <section id="entryScreen" class="screen active" aria-labelledby="entryTitle">
+        <div class="entry-card">
+          <header>
+            <p class="kicker">Acceso Institucional</p>
+            <h1 id="entryTitle">Escaneo de Código QR TECMA</h1>
+            <p class="lead">
+              Inicia el proceso oficial escaneando el QR personalizado con identidad T-MEC.
+            </p>
+            <img
+              class="entry-logo-ribbon"
+              src="assets/tecma-logo.png"
+              alt="Logotipo oficial de TECMA"
+            />
+          </header>
+
+          <div class="entry-grid">
+            <div class="qr-wrap">
+              <canvas id="entryQr" width="240" height="240" aria-label="QR de ingreso"></canvas>
+              <p class="qr-caption">QR oficial con identidad TECMA</p>
+            </div>
+
+            <div class="entry-form">
+              <label for="employeeName">Nombre del empleado</label>
+              <input
+                id="employeeName"
+                name="employeeName"
+                type="text"
+                maxlength="90"
+                placeholder="Ej. María Fernanda López"
+              />
+
+              <div class="photo-capture">
+                <label for="employeePhotoInput">Fotografía para certificado</label>
+                <input
+                  id="employeePhotoInput"
+                  class="photo-input"
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                />
+                <p class="photo-hint">
+                  En móvil se abrirá la cámara frontal para tomar la foto del colaborador.
+                </p>
+
+                <div class="entry-photo-preview-wrap">
+                  <img
+                    id="entryPhotoPreview"
+                    class="entry-photo-preview hidden"
+                    alt="Vista previa de la foto del colaborador"
+                  />
+                  <p id="photoStatus" class="photo-status">Foto pendiente de captura.</p>
+                </div>
+              </div>
+
+              <button id="scanBtn" class="btn btn-primary" type="button">
+                Iniciar proceso oficial
+              </button>
+
+              <p class="disclaimer">
+                Completa nombre + fotografía para generar un certificado con identidad validada.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="programScreen" class="screen" aria-live="polite">
+        <header class="tecma-header">
+          <div class="logo-block">
+            <div class="tecma-logo">
+              <img src="assets/tecma-logo.png" alt="Logotipo oficial de TECMA" />
+            </div>
+            <div>
+              <p class="logo-title">Programa de Cumplimiento Social</p>
+              <p class="logo-subtitle">Tratado entre México, Estados Unidos y Canadá</p>
+            </div>
+          </div>
+
+          <div class="flag-group" aria-label="Países miembros">
+            <span class="flag flag-mx">MEX</span>
+            <span class="flag flag-us">USA</span>
+            <span class="flag flag-ca">CAN</span>
+          </div>
+        </header>
+
+        <section id="welcomeStep" class="step active" aria-labelledby="welcomeTitle">
+          <div class="panel official-panel">
+            <img
+              class="welcome-brandmark"
+              src="assets/tecma-badge.png"
+              alt="Sello gráfico de identidad TECMA"
+            />
+            <p class="kicker">Bienvenida Institucional</p>
+            <h2 id="welcomeTitle">Bienvenido al módulo oficial TECMA</h2>
+            <div class="welcome-identity">
+              <img id="employeeAvatar" class="employee-avatar hidden" alt="Foto del colaborador" />
+              <p>
+                <strong id="employeeGreeting">Empleado TECMA</strong>, este proceso valida la
+                lectura, comprensión y aceptación de la Política Social T-MEC con enfoque en la
+                prevención del trabajo forzado.
+              </p>
+            </div>
+
+            <div class="symbol-row" aria-label="Simbología institucional">
+              <span class="symbol-pill">Apretón de manos</span>
+              <span class="symbol-pill">Hoja de maple</span>
+              <span class="symbol-pill">Águila</span>
+            </div>
+
+            <button id="goPolicyBtn" class="btn btn-primary" type="button">
+              Iniciar lectura oficial
+            </button>
+          </div>
+        </section>
+
+        <section id="policyStep" class="step" aria-labelledby="policyTitle">
+          <div class="panel policy-layout">
+            <aside class="policy-index">
+              <p class="kicker">Índice</p>
+              <ol>
+                <li>Principios generales</li>
+                <li>Prevención del trabajo forzado</li>
+                <li>Canales de denuncia</li>
+                <li>Compromiso individual</li>
+              </ol>
+            </aside>
+
+            <div class="policy-content">
+              <header>
+                <p class="kicker">Documento Oficial</p>
+                <img
+                  class="policy-header-logo"
+                  src="assets/tecma-logo.png"
+                  alt="Logotipo TECMA"
+                />
+                <h2 id="policyTitle">Política Social TECMA</h2>
+                <p class="policy-subtitle">
+                  Capítulo Laboral T-MEC - Cumplimiento y protección de derechos
+                </p>
+              </header>
+
+              <article id="policyScroll" class="policy-scroll" tabindex="0">
+                <section class="policy-section">
+                  <h3>1. Principios Generales de Cumplimiento Social</h3>
+                  <p>
+                    TECMA mantiene una política de cumplimiento social basada en legalidad,
+                    dignidad humana y mejora continua. Todas las operaciones, decisiones de
+                    supervisión y evaluaciones de desempeño deben alinearse con estándares
+                    laborales nacionales e internacionales aplicables al T-MEC.
+                  </p>
+                </section>
+
+                <section class="policy-section highlighted">
+                  <h3>2. Prevención del Trabajo Forzado (Capítulo 23 T-MEC)</h3>
+                  <p>
+                    TECMA, en alineación con los principios del Capítulo 23 del T-MEC, prohíbe
+                    de forma absoluta toda modalidad de trabajo forzado u obligatorio. Ninguna
+                    persona trabajadora podrá ser retenida mediante amenazas, coerción,
+                    retención de documentos, deudas impuestas, restricciones indebidas de
+                    movilidad o cualquier práctica que vulnere su libertad laboral. La empresa
+                    establece mecanismos de denuncia confidencial, investigación inmediata y
+                    protección contra represalias para garantizar condiciones de empleo dignas,
+                    voluntarias y verificables en toda la cadena de suministro.
+                  </p>
+
+                  <div class="chips">
+                    <span>Prohibición absoluta</span>
+                    <span>Denuncia confidencial</span>
+                    <span>Cero represalias</span>
+                  </div>
+                </section>
+
+                <section class="policy-section">
+                  <h3>3. Canales Formales de Reporte</h3>
+                  <p>
+                    Cualquier señal de coerción, amenaza o restricción indebida deberá
+                    reportarse de inmediato mediante los canales de cumplimiento interno. Toda
+                    investigación debe quedar documentada con trazabilidad y control de tiempos,
+                    asegurando confidencialidad de la persona reportante.
+                  </p>
+                </section>
+
+                <section class="policy-section">
+                  <h3>4. Compromiso del Empleado y Seguimiento</h3>
+                  <p>
+                    Cada colaborador declara que comprende y aplicará esta política en su ámbito
+                    de trabajo. El incumplimiento de estos lineamientos puede derivar en acciones
+                    correctivas, disciplinarias o de escalamiento según normatividad vigente.
+                  </p>
+                </section>
+              </article>
+
+              <div class="acceptance-block">
+                <p id="readStatus" class="read-status">
+                  Lee completamente el documento y permanece en esta sección al menos 12
+                  segundos.
+                </p>
+
+                <label class="commit-check">
+                  <input id="commitCheck" type="checkbox" disabled />
+                  <span>He leído y comprendido la Política Social T-MEC.</span>
+                </label>
+
+                <button id="acceptBtn" class="btn btn-commitment" type="button" disabled>
+                  Acepto y Me Comprometo
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="quizStep" class="step" aria-labelledby="quizTitle">
+          <div class="panel quiz-panel">
+            <header class="quiz-head">
+              <div>
+                <p class="kicker">Evaluación Rápida</p>
+                <h2 id="quizTitle">Cuestionario de Cumplimiento</h2>
+              </div>
+              <div id="quizCounter" class="quiz-counter">Pregunta 1 de 5</div>
+            </header>
+
+            <div id="quizProgress" class="quiz-progress" aria-label="Progreso del quiz">
+              <span class="segment"></span>
+              <span class="segment"></span>
+              <span class="segment"></span>
+              <span class="segment"></span>
+              <span class="segment"></span>
+            </div>
+
+            <article class="quiz-card">
+              <div class="quiz-flags">
+                <span class="flag flag-mx">MEX</span>
+                <span class="flag flag-us">USA</span>
+                <span class="flag flag-ca">CAN</span>
+              </div>
+
+              <h3 id="quizQuestion">Pregunta</h3>
+              <form id="quizOptions" class="options" aria-label="Opciones de respuesta"></form>
+
+              <div id="quizFeedback" class="feedback" aria-live="polite"></div>
+
+              <div class="quiz-actions">
+                <button id="submitAnswerBtn" class="btn btn-primary" type="button" disabled>
+                  Validar respuesta
+                </button>
+                <button id="nextQuestionBtn" class="btn btn-secondary hidden" type="button">
+                  Siguiente
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="resultStep" class="step" aria-labelledby="resultTitle">
+          <div class="panel official-panel">
+            <p class="kicker">Resultado</p>
+            <h2 id="resultTitle">Evaluación completada</h2>
+            <p id="resultSummary"></p>
+            <p id="resultStatus" class="result-status"></p>
+
+            <div class="result-actions">
+              <button id="retryQuizBtn" class="btn btn-secondary" type="button">Reintentar quiz</button>
+              <button id="generateCertBtn" class="btn btn-primary" type="button">
+                Generar certificado oficial
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="certificateStep" class="step" aria-labelledby="certTitle">
+          <div class="panel certificate-panel">
+            <div id="certificatePrintArea" class="certificate-document">
+              <header class="cert-header">
+                <div class="tecma-logo large">
+                  <img src="assets/tecma-logo.png" alt="Logotipo oficial de TECMA" />
+                </div>
+                <div class="flag-group">
+                  <span class="flag flag-mx">MEX</span>
+                  <span class="flag flag-us">USA</span>
+                  <span class="flag flag-ca">CAN</span>
+                </div>
+              </header>
+
+              <h2 id="certTitle" class="cert-title">
+                CERTIFICADO DE CUMPLIMIENTO DE POLÍTICA SOCIAL T-MEC
+              </h2>
+
+              <div class="cert-identity-row">
+                <p class="cert-text">
+                  Por la presente se certifica que
+                  <strong id="certName">[NOMBRE DEL EMPLEADO]</strong>
+                  ha leído, comprendido y aprobado el curso sobre la Política Social del T-MEC,
+                  con especial énfasis en la prevención del Trabajo Forzado, en cumplimiento con
+                  el Capítulo 23 del Tratado.
+                </p>
+
+                <figure class="cert-photo-wrap">
+                  <img id="certPhoto" class="cert-photo hidden" alt="Fotografía del colaborador" />
+                  <div id="certPhotoFallback" class="cert-photo-empty">Sin foto</div>
+                  <figcaption>Fotografía del colaborador</figcaption>
+                </figure>
+              </div>
+
+              <div class="cert-meta">
+                <p><strong>Fecha de finalización:</strong> <span id="certDate"></span></p>
+                <p><strong>Folio:</strong> <span id="certFolio"></span></p>
+              </div>
+
+              <div class="cert-signature-row">
+                <div class="signature-box">
+                  <p class="signature-line">____________________________</p>
+                  <p>Comité de Cumplimiento Social T-MEC</p>
+                </div>
+
+                <div class="seal">
+                  <img src="assets/tecma-badge-alt.png" alt="Sello oficial TECMA" />
+                  <span>Sello oficial TECMA</span>
+                </div>
+              </div>
+
+              <footer class="cert-footer">
+                <div class="timeline" aria-hidden="true">
+                  <span class="dot mx"></span>
+                  <span class="line"></span>
+                  <span class="dot us"></span>
+                  <span class="line"></span>
+                  <span class="dot ca"></span>
+                </div>
+                <div class="verify-block">
+                  <canvas id="certQr" width="110" height="110" aria-label="QR de verificación"></canvas>
+                  <p id="verifyUrl"></p>
+                </div>
+              </footer>
+            </div>
+
+            <div class="certificate-actions no-print">
+              <button id="printCertBtn" class="btn btn-primary" type="button">
+                Descargar / Imprimir certificado
+              </button>
+              <button id="newSessionBtn" class="btn btn-secondary" type="button">
+                Iniciar nuevo proceso
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <footer class="tecma-footer no-print">
+          <p>TECMA | Cumplimiento Social Trilateral | <span id="year"></span></p>
+        </footer>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
