@@ -1,6 +1,6 @@
 const MIN_POLICY_SECONDS = 12;
 const PASSING_SCORE = 4;
-const TECMA_LOGO_PATH = "assets/tecma-logo.png";
+const TECMA_LOGO_PATH = "/assets/tecma-logo.png";
 const PHOTO_MAX_EDGE = 960;
 
 const quizQuestions = [
