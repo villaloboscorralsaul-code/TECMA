@@ -415,9 +415,11 @@ function setActiveStep(stepId) {
 }
 
 function seedEntryQr() {
-  const seedText = `${window.location.origin}${window.location.pathname}::TECMA`;
-  refs.entryQr.dataset.payload = seedText;
-  drawBrandQr(refs.entryQr, seedText);
+  const qrUrl = new URL(window.location.origin + window.location.pathname);
+  qrUrl.searchParams.set("via", "qr");
+  const payload = qrUrl.toString();
+  refs.entryQr.dataset.payload = payload;
+  drawBrandQr(refs.entryQr, payload);
 }
 
 function startPolicyTimer() {
@@ -967,7 +969,7 @@ function decorateQrCanvas(canvas) {
 
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
-  const logoRadius = canvas.width * 0.16;
+  const logoRadius = canvas.width * 0.12;
 
   ctx.fillStyle = "#ffffff";
   ctx.beginPath();
