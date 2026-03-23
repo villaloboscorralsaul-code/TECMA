@@ -1,5 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
+const QRCode = require("qrcode");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 const {
   STATUS,
@@ -178,108 +179,27 @@ function drawDashedLine(page, { x1, x2, y, color, thickness = 1, dash = 6, gap =
   }
 }
 
-function hashCode(text) {
-  let hash = 0;
-  for (let i = 0; i < text.length; i += 1) {
-    hash = (hash << 5) - hash + text.charCodeAt(i);
-    hash |= 0;
-  }
-  return hash;
-}
+async function buildVerifyQrImage(pdfDoc, payload) {
+  try {
+    const dataUrl = await QRCode.toDataURL(payload, {
+      errorCorrectionLevel: "H",
+      margin: 1,
+      width: 260,
+      color: {
+        dark: "#1a2b4c",
+        light: "#ffffff",
+      },
+    });
 
-function drawFinderPattern(page, { x, y, moduleSize, navy, white }) {
-  const outer = moduleSize * 7;
-  const middle = moduleSize * 5;
-  const inner = moduleSize * 3;
-
-  page.drawRectangle({ x, y, width: outer, height: outer, color: navy });
-  page.drawRectangle({
-    x: x + moduleSize,
-    y: y + moduleSize,
-    width: middle,
-    height: middle,
-    color: white,
-  });
-  page.drawRectangle({
-    x: x + moduleSize * 2,
-    y: y + moduleSize * 2,
-    width: inner,
-    height: inner,
-    color: navy,
-  });
-}
-
-function drawPseudoQr(page, { x, y, size, payload, navy, white, orange }) {
-  const modules = 29;
-  const moduleSize = size / modules;
-  page.drawRectangle({
-    x,
-    y,
-    width: size,
-    height: size,
-    color: white,
-    borderColor: navy,
-    borderWidth: 1.2,
-  });
-
-  let seed = hashCode(payload || "TECMA-VERIFY") || 1;
-  const nextBit = () => {
-    seed ^= seed << 13;
-    seed ^= seed >> 17;
-    seed ^= seed << 5;
-    return (seed >>> 0) / 4294967295;
-  };
-
-  const isFinder = (cx, cy) => {
-    const topLeft = cx < 7 && cy < 7;
-    const topRight = cx > modules - 8 && cy < 7;
-    const bottomLeft = cx < 7 && cy > modules - 8;
-    return topLeft || topRight || bottomLeft;
-  };
-
-  for (let row = 0; row < modules; row += 1) {
-    for (let col = 0; col < modules; col += 1) {
-      if (isFinder(col, row)) {
-        continue;
-      }
-
-      if (nextBit() > 0.53) {
-        page.drawRectangle({
-          x: x + col * moduleSize,
-          y: y + row * moduleSize,
-          width: moduleSize,
-          height: moduleSize,
-          color: navy,
-        });
-      }
+    const base64 = String(dataUrl).split(",")[1];
+    if (!base64) {
+      return null;
     }
+
+    return await pdfDoc.embedPng(Buffer.from(base64, "base64"));
+  } catch {
+    return null;
   }
-
-  drawFinderPattern(page, { x, y, moduleSize, navy, white });
-  drawFinderPattern(page, {
-    x: x + (modules - 7) * moduleSize,
-    y,
-    moduleSize,
-    navy,
-    white,
-  });
-  drawFinderPattern(page, {
-    x,
-    y: y + (modules - 7) * moduleSize,
-    moduleSize,
-    navy,
-    white,
-  });
-
-  const center = size / 2;
-  page.drawCircle({
-    x: x + center,
-    y: y + center,
-    size: size * 0.13,
-    color: white,
-    borderColor: orange,
-    borderWidth: 1.4,
-  });
 }
 
 function fitImageContain(image, maxWidth, maxHeight) {
@@ -662,15 +582,33 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
     color: colors.line,
   });
 
-  drawPseudoQr(page, {
-    x: 46,
-    y: 40,
-    size: 66,
-    payload: `${folio}|${verifyUrl}|${safeEmployeeName}`,
-    navy: colors.navy,
-    white: colors.white,
-    orange: colors.orange,
-  });
+  const verifyQrImage = await buildVerifyQrImage(pdfDoc, verifyUrl);
+  if (verifyQrImage) {
+    page.drawImage(verifyQrImage, {
+      x: 46,
+      y: 40,
+      width: 66,
+      height: 66,
+    });
+    page.drawRectangle({
+      x: 46,
+      y: 40,
+      width: 66,
+      height: 66,
+      borderColor: colors.navy,
+      borderWidth: 1,
+    });
+  } else {
+    page.drawRectangle({
+      x: 46,
+      y: 40,
+      width: 66,
+      height: 66,
+      color: colors.white,
+      borderColor: colors.navy,
+      borderWidth: 1,
+    });
+  }
 
   const verifyLabel = `Verificacion: ${verifyUrl}`;
   const verifyLines = wrapText(fontRegular, verifyLabel, 8.5, 410);

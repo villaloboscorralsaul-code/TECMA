@@ -870,6 +870,39 @@ function redrawQrCanvases() {
 }
 
 function drawBrandQr(canvas, payload) {
+  if (
+    typeof window !== "undefined" &&
+    window.QRCode &&
+    typeof window.QRCode.toCanvas === "function"
+  ) {
+    window.QRCode.toCanvas(
+      canvas,
+      payload,
+      {
+        width: canvas.width,
+        margin: 1,
+        errorCorrectionLevel: "H",
+        color: {
+          dark: "#1a2b4c",
+          light: "#ffffff",
+        },
+      },
+      (error) => {
+        if (error) {
+          drawBrandQrFallback(canvas, payload);
+          return;
+        }
+
+        decorateQrCanvas(canvas);
+      }
+    );
+    return;
+  }
+
+  drawBrandQrFallback(canvas, payload);
+}
+
+function drawBrandQrFallback(canvas, payload) {
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     return;
@@ -923,6 +956,14 @@ function drawBrandQr(canvas, payload) {
   drawFinderPattern(ctx, margin, moduleSize, 0, 0);
   drawFinderPattern(ctx, margin, moduleSize, size - 7, 0);
   drawFinderPattern(ctx, margin, moduleSize, 0, size - 7);
+  decorateQrCanvas(canvas);
+}
+
+function decorateQrCanvas(canvas) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    return;
+  }
 
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
