@@ -1,43 +1,116 @@
-# MVP TECMA - Política Social T-MEC
+# TECMA Politica Social (QR + Admin + Certificados)
 
-Prototipo frontend estático con flujo completo:
+Implementacion completa del flujo TECMA en Netlify + Supabase con:
 
-1. Ingreso por QR (simulado)
-2. Captura de foto del colaborador (cámara móvil o galería)
-3. Landing institucional
-4. Lectura de política social con control de lectura
-5. Aceptación formal (`Acepto y Me Comprometo`)
-6. Quiz de 5 preguntas con feedback inmediato
-7. Generación de certificado oficial con folio, QR visual y foto del colaborador
-8. Descarga vía impresión (`window.print()`)
+1. Flujo de usuario desde QR general (`/`) con seleccion de nombre desde padron.
+2. Registro de estado por usuario: `PENDIENTE`, `EN_PROCESO`, `COMPLETADO`, `NO_APROBADO`.
+3. Quiz de 5 preguntas y criterio de aprobacion `4/5`.
+4. Generacion de certificado PDF con folio y URL de verificacion.
+5. Panel admin (`/admin?key=...`) con KPIs, carga manual, descarga individual y ZIP masivo.
 
-## Archivos
+## Estructura
 
-- `index.html`: estructura de pantallas y componentes
-- `styles.css`: diseño visual, tokens de marca y responsive
-- `app.js`: lógica completa del flujo y estado
-- `assets/tecma-logo.png`: logotipo principal TECMA
-- `assets/tecma-badge.png`: sello/gráfico institucional
-- `assets/tecma-badge-alt.png`: variante de sello institucional
+- `index.html`, `styles.css`, `app.js`: flujo usuario (movil-first).
+- `admin.html`, `admin.css`, `admin.js`: panel de seguimiento admin.
+- `netlify/functions/*`: API serverless.
+- `supabase/schema.sql`: esquema SQL.
+- `netlify.toml`: redirects de API y rutas app/admin.
 
-## Cómo ejecutar
+## Configuracion Rapida
 
-1. Abrir `index.html` en el navegador.
-2. Capturar nombre del empleado.
-3. Simular escaneo con botón de inicio.
-4. Completar el flujo hasta certificado.
+### 1) Supabase
 
-## Notas de marca para producción
+Ejecuta `supabase/schema.sql` en el SQL Editor del proyecto Supabase.
 
-- Reemplazar `TECMA` placeholder por logotipo oficial en SVG/PNG aprobado.
-- Sustituir cápsulas `MEX / USA / CAN` por escudos o banderas oficiales.
-- Integrar firma facsímil y sello institucional reales.
-- Conectar emisión de folio a backend transaccional (evitar aleatorio en producción).
-- Implementar verificación pública del certificado mediante endpoint seguro.
+Tablas incluidas:
 
-## Siguiente iteración recomendada
+- `usuarios`
+- `progreso_test`
+- `intentos_quiz`
+- `certificados`
+- `eventos_auditoria`
 
-- Migrar a framework (React/Next) con rutas y componentes desacoplados.
-- Implementar autenticación real por token QR firmado desde backend.
-- Persistir auditoría completa de lectura, aceptación, respuestas y emisión de certificado.
-- Integrar endpoint para validar certificado por folio + hash criptográfico.
+### 2) Variables de entorno (Netlify o local)
+
+Copia `.env.example` y define:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_ACCESS_KEY`
+- `CERTIFICATES_BUCKET` (opcional, default: `certificates`)
+- `PUBLIC_SITE_URL` (ej. `https://tu-sitio.netlify.app`)
+
+### 3) Dependencias
+
+```bash
+npm install
+```
+
+### 4) Verificacion de sintaxis
+
+```bash
+npm run check:functions
+node --check app.js
+node --check admin.js
+```
+
+## Rutas
+
+### Frontend
+
+- Usuario: `/`
+- Admin: `/admin?key=TU_LLAVE_ADMIN`
+
+### API (publicas de la app)
+
+- `GET /api/roster`
+- `POST /api/users` (admin key requerida)
+- `GET /api/admin/overview` (admin key requerida)
+- `GET /api/admin/users?status=ALL|PENDIENTE|EN_PROCESO|COMPLETADO|NO_APROBADO` (admin key requerida)
+- `POST /api/session/start`
+- `POST /api/policy/accept`
+- `POST /api/quiz/submit`
+- `POST /api/certificates/generate`
+- `GET /api/certificates/:id/download` (admin key requerida)
+- `POST /api/certificates/export-zip` (admin key requerida)
+- `GET /api/certificates/verify?token=...` o `?folio=...`
+
+## Flujo Funcional
+
+1. Admin entra a `/admin?key=...` y da de alta usuarios.
+2. Cada usuario nace en `PENDIENTE`.
+3. Usuario entra por QR general (`/`), selecciona nombre del padron y captura foto.
+4. App llama `POST /api/session/start` y pasa a `EN_PROCESO`.
+5. Tras lectura y aceptacion, app llama `POST /api/policy/accept`.
+6. Al terminar quiz, app llama `POST /api/quiz/submit`:
+   - `>=4`: mantiene `EN_PROCESO` hasta generar certificado.
+   - `<4`: cambia a `NO_APROBADO`.
+7. Si aprueba, app llama `POST /api/certificates/generate`:
+   - crea/reutiliza PDF
+   - asigna folio y verify token
+   - cambia a `COMPLETADO`.
+8. Admin monitorea KPIs y descarga evidencia individual o ZIP.
+
+## Notas de Seguridad
+
+- El panel admin esta protegido por `ADMIN_ACCESS_KEY` en query/header.
+- No existe login tradicional en esta version (decision de negocio del proyecto).
+- No usar anon key de Supabase en funciones serverless; usar `SERVICE_ROLE_KEY`.
+
+## Diagnostico de imagenes en Netlify
+
+Si logos/imagenes no cargan en produccion:
+
+1. Verifica que existan en `assets/` con el nombre exacto (respeta mayusculas).
+2. Usa rutas absolutas tipo `/assets/tecma-logo.png`.
+3. Confirma que Netlify publique la raiz del proyecto (`publish = "."`).
+4. Revisa que no haya redirects que capturen assets antes del archivo estatico.
+
+## Criterios de Aceptacion Implementados
+
+1. El total admin sale del conteo real de `usuarios`.
+2. Estados visibles y filtrables por dashboard.
+3. Cambio de estado en el ciclo real de usuario.
+4. Generacion y descarga individual de certificado.
+5. Exportacion ZIP para aprobados/completados.
+6. Endpoint de verificacion por folio/token.

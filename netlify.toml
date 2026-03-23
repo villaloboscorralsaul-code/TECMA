@@ -1,5 +1,71 @@
 [build]
   publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/roster"
+  to = "/.netlify/functions/roster"
+  status = 200
+
+[[redirects]]
+  from = "/api/users"
+  to = "/.netlify/functions/users"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/overview"
+  to = "/.netlify/functions/admin-overview"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/users"
+  to = "/.netlify/functions/admin-users"
+  status = 200
+
+[[redirects]]
+  from = "/api/session/start"
+  to = "/.netlify/functions/session-start"
+  status = 200
+
+[[redirects]]
+  from = "/api/policy/accept"
+  to = "/.netlify/functions/policy-accept"
+  status = 200
+
+[[redirects]]
+  from = "/api/quiz/submit"
+  to = "/.netlify/functions/quiz-submit"
+  status = 200
+
+[[redirects]]
+  from = "/api/certificates/generate"
+  to = "/.netlify/functions/certificates-generate"
+  status = 200
+
+[[redirects]]
+  from = "/api/certificates/export-zip"
+  to = "/.netlify/functions/certificates-export-zip"
+  status = 200
+
+[[redirects]]
+  from = "/api/certificates/verify"
+  to = "/.netlify/functions/certificates-verify"
+  status = 200
+
+[[redirects]]
+  from = "/api/certificates/:id/download"
+  to = "/.netlify/functions/certificates-download?id=:id"
+  status = 200
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/"
+  to = "/admin.html"
+  status = 200
 
 [[redirects]]
   from = "/*"

@@ -72,19 +72,36 @@ const quizQuestions = [
 ];
 
 const state = {
-  sessionToken: "",
+  userId: "",
   employeeName: "Empleado TECMA",
+  employeeCode: "",
+  employeeArea: "",
+  employeeStatus: "PENDIENTE",
   employeePhotoDataUrl: "",
+
+  rosterLoading: false,
+  rosterLoaded: false,
+  roster: [],
+  rosterMap: new Map(),
+  entryBusy: false,
+  alreadyCompleted: false,
+
   policyTimerDone: false,
   policyScrolledToEnd: false,
   policySecondsLeft: MIN_POLICY_SECONDS,
   policyTimerId: null,
+
   currentQuestion: 0,
   score: 0,
   answers: [],
   passed: false,
   acceptedAt: null,
+
   folio: "",
+  certificateDownloadUrl: "",
+  certificateVerifyUrl: "",
+  certificateIssuedAt: "",
+
   tecmaLogoImage: null,
   tecmaLogoReady: false,
 };
@@ -92,7 +109,11 @@ const state = {
 const refs = {
   entryScreen: document.querySelector("#entryScreen"),
   programScreen: document.querySelector("#programScreen"),
-  employeeNameInput: document.querySelector("#employeeName"),
+  employeeSelect: document.querySelector("#employeeSelect"),
+  reloadRosterBtn: document.querySelector("#reloadRosterBtn"),
+  rosterStatus: document.querySelector("#rosterStatus"),
+  selectedUserMeta: document.querySelector("#selectedUserMeta"),
+  entryMessage: document.querySelector("#entryMessage"),
   employeePhotoInput: document.querySelector("#employeePhotoInput"),
   entryPhotoPreview: document.querySelector("#entryPhotoPreview"),
   photoStatus: document.querySelector("#photoStatus"),
@@ -102,6 +123,7 @@ const refs = {
   steps: Array.from(document.querySelectorAll(".step")),
   employeeGreeting: document.querySelector("#employeeGreeting"),
   employeeAvatar: document.querySelector("#employeeAvatar"),
+  welcomeStatus: document.querySelector("#welcomeStatus"),
   goPolicyBtn: document.querySelector("#goPolicyBtn"),
 
   policyScroll: document.querySelector("#policyScroll"),
@@ -141,35 +163,18 @@ function init() {
   preloadBrandAssets();
   seedEntryQr();
   updateStartButtonState();
-
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-  const name = params.get("name");
-
-  if (token) {
-    state.sessionToken = token;
-    state.employeeName = sanitizeName(name) || "Empleado TECMA";
-    beginProgram();
-  }
+  void loadRoster();
 }
 
 function bindEvents() {
-  refs.employeeNameInput.addEventListener("input", updateStartButtonState);
+  refs.employeeSelect.addEventListener("change", handleEmployeeSelection);
+  refs.reloadRosterBtn.addEventListener("click", () => {
+    void loadRoster(true);
+  });
   refs.employeePhotoInput.addEventListener("change", handleEmployeePhotoChange);
 
   refs.scanBtn.addEventListener("click", () => {
-    state.employeeName = sanitizeName(refs.employeeNameInput.value) || "Empleado TECMA";
-
-    if (!state.employeePhotoDataUrl) {
-      refs.photoStatus.textContent = "Captura la fotografía antes de continuar.";
-      refs.photoStatus.classList.remove("ok");
-      updateStartButtonState();
-      return;
-    }
-
-    state.sessionToken = createSessionToken();
-    updateUrlWithSession();
-    beginProgram();
+    void handleSessionStart();
   });
 
   refs.goPolicyBtn.addEventListener("click", () => {
@@ -185,9 +190,7 @@ function bindEvents() {
   });
 
   refs.acceptBtn.addEventListener("click", () => {
-    state.acceptedAt = new Date();
-    startQuiz();
-    setActiveStep("quizStep");
+    void handlePolicyAcceptance();
   });
 
   refs.quizOptions.addEventListener("change", () => {
@@ -202,7 +205,7 @@ function bindEvents() {
       renderQuestion();
       return;
     }
-    showResult();
+    void showResult();
   });
 
   refs.retryQuizBtn.addEventListener("click", () => {
@@ -211,17 +214,180 @@ function bindEvents() {
   });
 
   refs.generateCertBtn.addEventListener("click", () => {
-    renderCertificate();
-    setActiveStep("certificateStep");
+    void handleGenerateCertificate();
   });
 
-  refs.printCertBtn.addEventListener("click", () => window.print());
+  refs.printCertBtn.addEventListener("click", handleDownloadCertificate);
 
   refs.newSessionBtn.addEventListener("click", () => {
-    const clearUrl = `${window.location.pathname}`;
-    window.history.replaceState({}, "", clearUrl);
-    window.location.reload();
+    window.location.href = window.location.pathname;
   });
+}
+
+async function loadRoster(force = false) {
+  if (state.rosterLoading) {
+    return;
+  }
+
+  state.rosterLoading = true;
+  refs.employeeSelect.disabled = true;
+  refs.reloadRosterBtn.disabled = true;
+  refs.rosterStatus.textContent = "Consultando lista de usuarios...";
+
+  if (force) {
+    refs.reloadRosterBtn.textContent = "Actualizando...";
+  }
+
+  try {
+    const payload = await apiRequest("/api/roster");
+    const users = Array.isArray(payload.users) ? payload.users : [];
+
+    state.roster = users;
+    state.rosterMap = new Map(users.map((row) => [row.id, row]));
+    state.rosterLoaded = true;
+
+    renderRosterSelect(users);
+
+    if (users.length === 0) {
+      refs.rosterStatus.textContent =
+        "No hay usuarios cargados. Solicita al administrador registrar el padrón en /admin.";
+    } else {
+      refs.rosterStatus.textContent = `Padrón listo: ${users.length} usuarios disponibles.`;
+    }
+  } catch (error) {
+    state.rosterLoaded = false;
+    refs.employeeSelect.innerHTML = '<option value="">No se pudo cargar el padrón</option>';
+    refs.rosterStatus.textContent = `Error al cargar padrón: ${error.message}`;
+    setEntryMessage("No fue posible cargar el padrón de usuarios.", "error");
+  } finally {
+    state.rosterLoading = false;
+    refs.employeeSelect.disabled = false;
+    refs.reloadRosterBtn.disabled = false;
+    refs.reloadRosterBtn.textContent = "Actualizar padrón";
+    updateStartButtonState();
+  }
+}
+
+function renderRosterSelect(users) {
+  const previousValue = refs.employeeSelect.value;
+
+  const options = [
+    '<option value="">Selecciona tu nombre</option>',
+    ...users.map((user) => {
+      const statusLabel = user.estado ? ` (${user.estado})` : "";
+      return `<option value="${escapeHtml(user.id)}">${escapeHtml(user.nombre)}${escapeHtml(statusLabel)}</option>`;
+    }),
+  ];
+
+  refs.employeeSelect.innerHTML = options.join("");
+
+  if (previousValue && state.rosterMap.has(previousValue)) {
+    refs.employeeSelect.value = previousValue;
+    handleEmployeeSelection();
+  } else {
+    refs.employeeSelect.value = "";
+    clearSelectedUserState();
+  }
+}
+
+function handleEmployeeSelection() {
+  const selectedId = refs.employeeSelect.value;
+
+  if (!selectedId || !state.rosterMap.has(selectedId)) {
+    clearSelectedUserState();
+    updateStartButtonState();
+    return;
+  }
+
+  const selectedUser = state.rosterMap.get(selectedId);
+  state.userId = selectedUser.id;
+  state.employeeName = selectedUser.nombre || "Empleado TECMA";
+  state.employeeCode = selectedUser.codigo_interno || "";
+  state.employeeArea = selectedUser.area || "";
+  state.employeeStatus = selectedUser.estado || "PENDIENTE";
+
+  const parts = [
+    state.employeeCode ? `Código: ${state.employeeCode}` : null,
+    state.employeeArea ? `Área: ${state.employeeArea}` : null,
+    `Estado actual: ${state.employeeStatus}`,
+  ].filter(Boolean);
+
+  refs.selectedUserMeta.textContent = parts.join(" | ");
+  refs.selectedUserMeta.classList.remove("hidden");
+  setEntryMessage("");
+  updateStartButtonState();
+}
+
+function clearSelectedUserState() {
+  state.userId = "";
+  state.employeeName = "Empleado TECMA";
+  state.employeeCode = "";
+  state.employeeArea = "";
+  state.employeeStatus = "PENDIENTE";
+
+  refs.selectedUserMeta.textContent = "";
+  refs.selectedUserMeta.classList.add("hidden");
+}
+
+function setEntryMessage(text, tone = "") {
+  refs.entryMessage.textContent = text || "";
+  refs.entryMessage.classList.remove("error", "success");
+
+  if (tone === "error") {
+    refs.entryMessage.classList.add("error");
+  }
+
+  if (tone === "success") {
+    refs.entryMessage.classList.add("success");
+  }
+}
+
+async function handleSessionStart() {
+  if (state.entryBusy) {
+    return;
+  }
+
+  if (!state.userId) {
+    setEntryMessage("Selecciona tu nombre en el padrón para continuar.", "error");
+    return;
+  }
+
+  if (!state.employeePhotoDataUrl) {
+    refs.photoStatus.textContent = "Captura la fotografía antes de continuar.";
+    refs.photoStatus.classList.remove("ok");
+    setEntryMessage("La fotografía es obligatoria para emitir certificado.", "error");
+    return;
+  }
+
+  state.entryBusy = true;
+  refs.scanBtn.disabled = true;
+  refs.scanBtn.textContent = "Validando acceso...";
+  setEntryMessage("Registrando inicio de sesión de cumplimiento...");
+
+  try {
+    const payload = await apiRequest("/api/session/start", {
+      method: "POST",
+      body: {
+        user_id: state.userId,
+      },
+    });
+
+    state.userId = payload.user?.id || state.userId;
+    state.employeeName = payload.user?.nombre || state.employeeName;
+    state.employeeCode = payload.user?.codigo_interno || "";
+    state.employeeArea = payload.user?.area || "";
+    state.employeeStatus = payload.estado || "EN_PROCESO";
+    state.alreadyCompleted = Boolean(payload.already_completed);
+
+    setEntryMessage("Sesión iniciada correctamente.", "success");
+    beginProgram();
+  } catch (error) {
+    setEntryMessage(`No fue posible iniciar: ${error.message}`, "error");
+  } finally {
+    state.entryBusy = false;
+    refs.scanBtn.textContent = "Iniciar proceso oficial";
+    updateStartButtonState();
+  }
 }
 
 function beginProgram() {
@@ -229,6 +395,16 @@ function beginProgram() {
   refs.programScreen.classList.add("active");
   refs.employeeGreeting.textContent = state.employeeName;
   syncEmployeePhotoInUI();
+
+  if (state.alreadyCompleted) {
+    refs.welcomeStatus.textContent =
+      "Este colaborador ya cuenta con un certificado emitido. Puede repetir el módulo o avanzar para recuperar evidencia.";
+    refs.welcomeStatus.classList.remove("hidden");
+  } else {
+    refs.welcomeStatus.textContent = "";
+    refs.welcomeStatus.classList.add("hidden");
+  }
+
   setActiveStep("welcomeStep");
 }
 
@@ -301,6 +477,35 @@ function updateReadStatus() {
   const ready = isPolicyReady();
   refs.commitCheck.disabled = !ready;
   refs.acceptBtn.disabled = !ready || !refs.commitCheck.checked;
+}
+
+async function handlePolicyAcceptance() {
+  if (!state.userId) {
+    refs.readStatus.textContent = "No hay usuario activo. Regresa al inicio.";
+    return;
+  }
+
+  const previousText = refs.acceptBtn.textContent;
+  refs.acceptBtn.disabled = true;
+  refs.acceptBtn.textContent = "Registrando aceptación...";
+
+  try {
+    const payload = await apiRequest("/api/policy/accept", {
+      method: "POST",
+      body: {
+        user_id: state.userId,
+      },
+    });
+
+    state.acceptedAt = payload.accepted_at ? new Date(payload.accepted_at) : new Date();
+    startQuiz();
+    setActiveStep("quizStep");
+  } catch (error) {
+    refs.readStatus.textContent = `No se pudo registrar aceptación: ${error.message}`;
+    refs.acceptBtn.disabled = false;
+  } finally {
+    refs.acceptBtn.textContent = previousText;
+  }
 }
 
 function startQuiz() {
@@ -393,38 +598,96 @@ function submitCurrentAnswer() {
   paintProgress();
 }
 
-function showResult() {
-  state.passed = state.score >= PASSING_SCORE;
+async function showResult() {
   setActiveStep("resultStep");
 
-  refs.resultSummary.textContent = `Obtuviste ${state.score} de ${quizQuestions.length} respuestas correctas.`;
-
+  refs.resultSummary.textContent =
+    `Obtuviste ${state.score} de ${quizQuestions.length} respuestas correctas. Registrando resultado...`;
   refs.resultStatus.classList.remove("pass", "fail");
+  refs.resultStatus.textContent = "Procesando...";
+  refs.generateCertBtn.classList.add("hidden");
 
-  if (state.passed) {
-    refs.resultStatus.classList.add("pass");
-    refs.resultStatus.textContent = "Aprobado: cumples el criterio mínimo (4/5).";
-    refs.generateCertBtn.classList.remove("hidden");
-  } else {
+  try {
+    const payload = await apiRequest("/api/quiz/submit", {
+      method: "POST",
+      body: {
+        user_id: state.userId,
+        score: state.score,
+        answers: state.answers,
+      },
+    });
+
+    state.passed = Boolean(payload.passed);
+    state.employeeStatus = payload.estado || state.employeeStatus;
+
+    if (state.passed) {
+      refs.resultStatus.classList.add("pass");
+      refs.resultStatus.textContent = "Aprobado: cumples el criterio mínimo (4/5).";
+      refs.generateCertBtn.classList.remove("hidden");
+      return;
+    }
+
     refs.resultStatus.classList.add("fail");
-    refs.resultStatus.textContent = "No aprobado: revisa el contenido y realiza un nuevo intento.";
-    refs.generateCertBtn.classList.add("hidden");
+    refs.resultStatus.textContent =
+      "No aprobado: revisa el contenido y realiza un nuevo intento.";
+  } catch (error) {
+    refs.resultStatus.classList.add("fail");
+    refs.resultStatus.textContent = `No fue posible registrar el resultado: ${error.message}`;
   }
 }
 
-function renderCertificate() {
-  const now = new Date();
+async function handleGenerateCertificate() {
+  if (!state.userId) {
+    refs.resultStatus.classList.remove("pass");
+    refs.resultStatus.classList.add("fail");
+    refs.resultStatus.textContent = "No hay usuario activo para generar certificado.";
+    return;
+  }
+
+  const previousText = refs.generateCertBtn.textContent;
+  refs.generateCertBtn.disabled = true;
+  refs.generateCertBtn.textContent = "Generando certificado...";
+
+  try {
+    const payload = await apiRequest("/api/certificates/generate", {
+      method: "POST",
+      body: {
+        user_id: state.userId,
+        employee_photo_data_url: state.employeePhotoDataUrl,
+      },
+    });
+
+    if (!payload.certificate) {
+      throw new Error("Respuesta inválida al generar certificado");
+    }
+
+    renderCertificate(payload.certificate);
+    setActiveStep("certificateStep");
+  } catch (error) {
+    refs.resultStatus.classList.remove("pass");
+    refs.resultStatus.classList.add("fail");
+    refs.resultStatus.textContent = `No fue posible generar el certificado: ${error.message}`;
+  } finally {
+    refs.generateCertBtn.disabled = false;
+    refs.generateCertBtn.textContent = previousText;
+  }
+}
+
+function renderCertificate(certificate) {
+  const issuedAt = certificate.issued_at ? new Date(certificate.issued_at) : new Date();
   const longDate = new Intl.DateTimeFormat("es-MX", {
     day: "2-digit",
     month: "long",
     year: "numeric",
-  }).format(now);
+  }).format(issuedAt);
 
-  if (!state.folio) {
-    state.folio = createFolio(now);
-  }
+  state.folio = String(certificate.folio || "").trim() || createFallbackFolio(issuedAt);
+  state.certificateDownloadUrl = String(certificate.download_url || "").trim();
+  state.certificateVerifyUrl = String(certificate.verify_url || "").trim();
+  state.certificateIssuedAt = issuedAt.toISOString();
 
   refs.certName.textContent = state.employeeName;
+
   if (state.employeePhotoDataUrl) {
     refs.certPhoto.src = state.employeePhotoDataUrl;
     refs.certPhoto.classList.remove("hidden");
@@ -434,65 +697,65 @@ function renderCertificate() {
     refs.certPhoto.classList.add("hidden");
     refs.certPhotoFallback.classList.remove("hidden");
   }
+
   refs.certDate.textContent = longDate;
   refs.certFolio.textContent = state.folio;
 
-  const verificationCode = `VALIDACION TECMA | ${state.folio} | ${state.employeeName} | ${now.toISOString()}`;
-  refs.verifyUrl.textContent = `Código de verificación: ${state.folio}`;
-  refs.certQr.dataset.payload = verificationCode;
-  drawBrandQr(refs.certQr, verificationCode);
+  const verificationValue = state.certificateVerifyUrl || `Folio: ${state.folio}`;
+  refs.certQr.dataset.payload = verificationValue;
+  drawBrandQr(refs.certQr, verificationValue);
 
-  cacheCertificateRecord(now.toISOString());
+  if (state.certificateVerifyUrl) {
+    refs.verifyUrl.innerHTML = `<a href="${escapeHtml(state.certificateVerifyUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+      state.certificateVerifyUrl
+    )}</a>`;
+  } else {
+    refs.verifyUrl.textContent = `Código de verificación: ${state.folio}`;
+  }
+
+  cacheCertificateRecord();
 }
 
-function cacheCertificateRecord(issuedAtIso) {
+function cacheCertificateRecord() {
+  if (!state.folio) {
+    return;
+  }
+
   try {
     const key = `tecma-cert:${state.folio}`;
     const payload = {
       folio: state.folio,
       employeeName: state.employeeName,
-      issuedAt: issuedAtIso,
+      issuedAt: state.certificateIssuedAt,
       score: state.score,
       policyAcceptedAt: state.acceptedAt ? state.acceptedAt.toISOString() : null,
-      sessionToken: state.sessionToken,
+      userId: state.userId,
       hasPhoto: Boolean(state.employeePhotoDataUrl),
     };
 
     window.localStorage.setItem(key, JSON.stringify(payload));
-  } catch (err) {
+  } catch {
     // Ignora entornos bloqueados sin storage para no romper el flujo.
   }
 }
 
-function createSessionToken() {
-  const random = Math.random().toString(36).slice(2, 9).toUpperCase();
-  return `TECMA-${Date.now().toString(36).toUpperCase()}-${random}`;
+function handleDownloadCertificate() {
+  if (state.certificateDownloadUrl) {
+    window.open(state.certificateDownloadUrl, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  window.print();
 }
 
-function createFolio(dateObj) {
+function createFallbackFolio(dateObj) {
   const year = dateObj.getFullYear();
-  const serial = Math.floor(1000 + Math.random() * 9000);
+  const serial = Math.floor(100000 + Math.random() * 900000);
   return `TECMA-CERT-${year}-${serial}`;
 }
 
-function updateUrlWithSession() {
-  const url = new URL(window.location.href);
-  url.searchParams.set("token", state.sessionToken);
-  url.searchParams.set("name", state.employeeName);
-  window.history.replaceState({}, "", url.toString());
-}
-
-function sanitizeName(value) {
-  if (!value) {
-    return "";
-  }
-
-  return value.replace(/\s+/g, " ").trim().slice(0, 90);
-}
-
 function updateStartButtonState() {
-  const cleanName = sanitizeName(refs.employeeNameInput.value);
-  const ready = Boolean(cleanName) && Boolean(state.employeePhotoDataUrl);
+  const ready = Boolean(state.userId) && Boolean(state.employeePhotoDataUrl) && !state.entryBusy;
   refs.scanBtn.disabled = !ready;
 }
 
@@ -525,8 +788,9 @@ async function handleEmployeePhotoChange(event) {
     refs.entryPhotoPreview.classList.remove("hidden");
     refs.photoStatus.textContent = "Foto capturada correctamente.";
     refs.photoStatus.classList.add("ok");
+    setEntryMessage("");
     updateStartButtonState();
-  } catch (error) {
+  } catch {
     state.employeePhotoDataUrl = "";
     refs.entryPhotoPreview.src = "";
     refs.entryPhotoPreview.classList.add("hidden");
@@ -730,6 +994,37 @@ function hashCode(str) {
     hash |= 0;
   }
   return hash;
+}
+
+async function apiRequest(path, options = {}) {
+  const response = await fetch(path, {
+    method: options.method || "GET",
+    headers: {
+      "content-type": "application/json",
+      ...(options.headers || {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+  const payload = isJson ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    const message = isJson && payload && payload.error ? payload.error : "Request failed";
+    throw new Error(message);
+  }
+
+  return isJson ? payload : {};
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 init();

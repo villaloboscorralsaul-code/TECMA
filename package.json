@@ -1,0 +1,14 @@
+{
+  "name": "tecma-compliance-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TECMA compliance flow with Supabase + Netlify Functions",
+  "scripts": {
+    "check:functions": "node --check netlify/functions/_lib/common.js && for f in netlify/functions/*.js; do node --check \"$f\"; done"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.8",
+    "jszip": "^3.10.1",
+    "pdf-lib": "^1.17.1"
+  }
+}

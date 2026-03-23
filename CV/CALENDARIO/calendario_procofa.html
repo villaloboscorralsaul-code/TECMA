@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calendario Ejecutivo PROCOFA - Cierre 15 de abril de 2026</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Montserrat+Alternates:wght@700&display=swap");
+
+    :root {
+      --pcf-slate-900: #3f4750;
+      --pcf-slate-800: #49525d;
+      --pcf-slate-700: #556170;
+      --pcf-mint-500: #89b88f;
+      --pcf-mint-600: #7bab84;
+      --pcf-mint-900: #446349;
+      --pcf-text: #eaf0ef;
+      --pcf-text-dark: #303841;
+      --pcf-soft: #f4f7f6;
+      --pcf-line: #cfdad8;
+      --pcf-accent: #48bca2;
+      --pcf-accent-2: #25ad99;
+      --pcf-warning: #f4c662;
+      --pcf-danger: #f08a72;
+      --pcf-ok: #63c08a;
+      --radius-xl: 20px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --shadow-strong: 0 20px 45px rgba(21, 28, 35, 0.2);
+      --shadow-soft: 0 10px 30px rgba(24, 31, 39, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Montserrat", sans-serif;
+      color: var(--pcf-text);
+      min-height: 100vh;
+      position: relative;
+      background-color: var(--pcf-mint-500);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0 0 42% 0;
+      background:
+        linear-gradient(130deg, rgba(63, 71, 80, 0.98), rgba(73, 82, 93, 0.96)),
+        repeating-linear-gradient(
+          to right,
+          rgba(117, 132, 150, 0.2) 0,
+          rgba(117, 132, 150, 0.2) 2px,
+          transparent 2px,
+          transparent 220px
+        ),
+        repeating-linear-gradient(
+          to bottom,
+          rgba(117, 132, 150, 0.2) 0,
+          rgba(117, 132, 150, 0.2) 2px,
+          transparent 2px,
+          transparent 120px
+        );
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 42% 0 0 0;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.2), transparent 42%),
+        radial-gradient(circle at 84% 20%, rgba(72, 95, 74, 0.24), transparent 38%),
+        linear-gradient(180deg, #88b88d 0%, #7dac85 100%);
+      z-index: -2;
+    }
+
+    .page {
+      width: min(1280px, calc(100vw - 28px));
+      margin: 24px auto 40px;
+      animation: rise 700ms ease both;
+    }
+
+    .hero {
+      position: relative;
+      border-radius: var(--radius-xl);
+      padding: 24px 24px 18px;
+      background:
+        linear-gradient(140deg, rgba(63, 71, 80, 0.94), rgba(50, 58, 67, 0.92)),
+        url("https://procofa.com/wp-content/uploads/2020/04/topography.svg");
+      background-size: cover, 580px;
+      box-shadow: var(--shadow-strong);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 86% 12%, rgba(137, 184, 143, 0.22), transparent 38%);
+      pointer-events: none;
+    }
+
+    .hero-top {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(2px);
+    }
+
+    .logo-wrap img {
+      width: 220px;
+      max-width: 72vw;
+      height: auto;
+      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.28));
+    }
+
+    .hero-copy {
+      max-width: 760px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(137, 184, 143, 0.2);
+      border: 1px solid rgba(137, 184, 143, 0.48);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #d7f0dc;
+    }
+
+    .hero h1 {
+      margin: 10px 0 8px;
+      font-size: clamp(1.3rem, 2.6vw, 2.35rem);
+      line-height: 1.15;
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: -0.01em;
+      font-family: "Montserrat Alternates", "Montserrat", sans-serif;
+      text-wrap: balance;
+    }
+
+    .hero h1 span {
+      color: #9fd4a5;
+    }
+
+    .hero p {
+      margin: 0;
+      font-size: 0.98rem;
+      line-height: 1.56;
+      color: rgba(240, 247, 244, 0.92);
+      max-width: 68ch;
+      text-wrap: pretty;
+    }
+
+    .hero-grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .status-card {
+      border-radius: 14px;
+      padding: 14px 14px 12px;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03));
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(3px);
+      transition: transform 250ms ease, box-shadow 250ms ease, border-color 250ms ease;
+      animation: float-in 600ms ease both;
+    }
+
+    .status-card:nth-child(1) { animation-delay: 90ms; }
+    .status-card:nth-child(2) { animation-delay: 170ms; }
+    .status-card:nth-child(3) { animation-delay: 250ms; }
+    .status-card:nth-child(4) { animation-delay: 330ms; }
+
+    .status-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+      border-color: rgba(159, 212, 165, 0.5);
+    }
+
+    .status-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+      color: #d8e4e1;
+    }
+
+    .status-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.16);
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+    }
+
+    .status-icon svg {
+      width: 16px;
+      height: 16px;
+      stroke: #d4efe3;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .status-value {
+      margin-top: 7px;
+      display: block;
+      color: #fff;
+      font-size: 1.12rem;
+      line-height: 1.2;
+      font-weight: 800;
+      text-wrap: balance;
+    }
+
+    .service-strip {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      animation: rise 700ms ease both;
+      animation-delay: 220ms;
+    }
+
+    .service {
+      min-height: 176px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(150deg, rgba(63, 71, 80, 0.95), rgba(55, 64, 74, 0.94));
+      border: 1px solid rgba(137, 184, 143, 0.28);
+      box-shadow: var(--shadow-soft);
+      padding: 18px 16px 14px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      transition: transform 250ms ease, border-color 250ms ease;
+    }
+
+    .service:hover {
+      transform: translateY(-4px);
+      border-color: rgba(137, 184, 143, 0.62);
+    }
+
+    .service h3 {
+      margin: 0;
+      font-size: 1.24rem;
+      line-height: 1.28;
+      color: #f6fbf8;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .service h3 span {
+      color: #9fd1a3;
+    }
+
+    .service .tag {
+      justify-self: start;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: #dce8e5;
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .block {
+      margin-top: 18px;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      border: 1px solid rgba(64, 76, 86, 0.2);
+      box-shadow: var(--shadow-soft);
+      animation: rise 720ms ease both;
+      animation-delay: 300ms;
+    }
+
+    .block-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 14px 18px;
+      color: #fff;
+      background: linear-gradient(120deg, var(--pcf-accent), var(--pcf-accent-2));
+    }
+
+    .block-head h2 {
+      margin: 0;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 900;
+      font-family: "Montserrat Alternates", "Montserrat", sans-serif;
+    }
+
+    .block-head .subtitle {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      opacity: 0.92;
+    }
+
+    .timeline-wrap {
+      background: linear-gradient(175deg, #f7faf9, #f0f5f3);
+      padding: 14px;
+    }
+
+    .timeline-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-bottom: 10px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #4f5f5e;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .timeline-legend .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .dot.plan { background: #b9dcd2; }
+    .dot.run { background: #8bcaa1; }
+    .dot.close { background: #5ea46d; }
+
+    .gantt-shell {
+      background: #fff;
+      border: 1px solid #dfe9e6;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .gantt-header,
+    .gantt-row {
+      display: grid;
+      grid-template-columns: minmax(220px, 320px) repeat(4, minmax(120px, 1fr));
+    }
+
+    .gantt-header {
+      background: #eef5f3;
+      color: #3c4b4f;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 800;
+      border-bottom: 1px solid #d7e3e0;
+    }
+
+    .gantt-header div {
+      padding: 10px 12px;
+      border-right: 1px solid #dce8e5;
+      text-align: center;
+    }
+
+    .gantt-header div:first-child {
+      text-align: left;
+    }
+
+    .gantt-row {
+      position: relative;
+      min-height: 74px;
+      border-bottom: 1px solid #e8efed;
+      background: #fff;
+    }
+
+    .gantt-row:last-child {
+      border-bottom: none;
+    }
+
+    .task {
+      padding: 11px 12px;
+      display: grid;
+      align-content: center;
+      gap: 4px;
+      color: #2f3d45;
+    }
+
+    .task strong {
+      font-size: 0.9rem;
+      line-height: 1.3;
+    }
+
+    .task span {
+      font-size: 0.74rem;
+      color: #59676e;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .week {
+      border-right: 1px solid #edf2f1;
+      position: relative;
+    }
+
+    .week:last-child {
+      border-right: none;
+    }
+
+    .bar {
+      align-self: center;
+      justify-self: stretch;
+      margin: 0 8px;
+      border-radius: 999px;
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 800;
+      color: #123727;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 3px 8px rgba(25, 48, 38, 0.12);
+    }
+
+    .bar.plan {
+      background: linear-gradient(90deg, #d6ece5, #bee2d6);
+    }
+
+    .bar.run {
+      background: linear-gradient(90deg, #a4d8b1, #83c69c);
+    }
+
+    .bar.close {
+      background: linear-gradient(90deg, #66b27f, #4ea06c);
+      color: #f4fff8;
+    }
+
+    .detail-wrap {
+      padding: 14px;
+      background: linear-gradient(180deg, #f3f8f6, #eef4f2);
+    }
+
+    .table-shell {
+      border-radius: 14px;
+      overflow: auto;
+      border: 1px solid #d5e2de;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+      color: #2f3b42;
+      font-size: 0.86rem;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e7efec;
+      border-right: 1px solid #e9f0ee;
+      padding: 10px 10px;
+      vertical-align: top;
+    }
+
+    th:last-child,
+    td:last-child {
+      border-right: none;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: linear-gradient(180deg, #44505c, #3a444f);
+      color: #f1f7f4;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.72rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover {
+      background: #f6fbf8;
+    }
+
+    .chip {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .chip.high {
+      color: #8a2f2a;
+      background: #ffe4df;
+      border-color: #f6beb3;
+    }
+
+    .chip.medium {
+      color: #7a611a;
+      background: #fff3d7;
+      border-color: #f0d9a3;
+    }
+
+    .chip.plan {
+      color: #315f4f;
+      background: #def0e9;
+      border-color: #b4d8c9;
+    }
+
+    .chip.run {
+      color: #6f4810;
+      background: #ffe5b9;
+      border-color: #f1c978;
+    }
+
+    .footnote {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #f9fcfb;
+      border: 1px solid #d7e5e1;
+      color: #3f4d53;
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .footnote strong {
+      color: #2b3a41;
+    }
+
+    .footer-line {
+      margin-top: 14px;
+      text-align: center;
+      color: rgba(245, 251, 249, 0.9);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes float-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (max-width: 1060px) {
+      .hero-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .service-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .gantt-header,
+      .gantt-row {
+        grid-template-columns: minmax(190px, 260px) repeat(4, minmax(95px, 1fr));
+      }
+    }
+
+    @media (max-width: 780px) {
+      .page {
+        width: min(1280px, calc(100vw - 14px));
+        margin: 14px auto 24px;
+      }
+
+      .hero {
+        padding: 16px 14px 14px;
+      }
+
+      .hero-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .gantt-shell {
+        overflow: auto;
+      }
+
+      .gantt-header,
+      .gantt-row {
+        min-width: 840px;
+      }
+
+      .block-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="hero-top">
+        <div class="logo-wrap">
+          <img src="https://procofa.com/wp-content/uploads/2025/09/Logo-PROCOFA-Original-scaled.png" alt="Logo PROCOFA">
+        </div>
+        <div class="hero-copy">
+          <span class="eyebrow">Calendario Ejecutivo 2026</span>
+          <h1>Plan de Cierre de Actividades <span>con Estilo PROCOFA</span></h1>
+          <p>Rediseño visual premium con enfoque ejecutivo, fechas críticas y seguimiento elegante para asegurar cierre documental y operativo al <strong>15 de abril de 2026</strong>.</p>
+        </div>
+      </div>
+
+      <div class="hero-grid">
+        <article class="status-card">
+          <div class="status-top">
+            <span>Inicio operativo</span>
+            <span class="status-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h8M8 12h8M8 17h5"/><path d="M5 3h14a1 1 0 0 1 1 1v16l-3-2-3 2-3-2-3 2-3-2V4a1 1 0 0 1 1-1Z"/></svg>
+            </span>
+          </div>
+          <span class="status-value">23 mar 2026</span>
+        </article>
+        <article class="status-card">
+          <div class="status-top">
+            <span>Corte de control</span>
+            <span class="status-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>
+            </span>
+          </div>
+          <span class="status-value">13 abr 2026</span>
+        </article>
+        <article class="status-card">
+          <div class="status-top">
+            <span>Cierre final</span>
+            <span class="status-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 12 4 4 8-8"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
+            </span>
+          </div>
+          <span class="status-value">15 abr 2026</span>
+        </article>
+        <article class="status-card">
+          <div class="status-top">
+            <span>Actividades</span>
+            <span class="status-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16"/><path d="M7 14V6M12 18V9M17 12V4"/></svg>
+            </span>
+          </div>
+          <span class="status-value">13 tareas clave</span>
+        </article>
+      </div>
+    </header>
+
+    <section class="service-strip">
+      <article class="service">
+        <span class="tag">Ruta 1</span>
+        <h3>Gestión de <span>riesgos</span> y actualización normativa</h3>
+        <span class="tag">Sub-estándares 1.1 y 4.1</span>
+      </article>
+      <article class="service">
+        <span class="tag">Ruta 2</span>
+        <h3>Control de <span>evidencias CCTV</span> y alertamiento</h3>
+        <span class="tag">Sub-estándares 2.8 y 5.3</span>
+      </article>
+      <article class="service">
+        <span class="tag">Ruta 3</span>
+        <h3>Inspección y <span>capacitación</span> con cierre documental</h3>
+        <span class="tag">Sub-estándares 7.2 y 10.1</span>
+      </article>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Calendario Ejecutivo Elegante</h2>
+        <span class="subtitle">Semana 1 a Semana 4 - Marzo/Abril 2026</span>
+      </div>
+      <div class="timeline-wrap">
+        <div class="timeline-legend">
+          <span><span class="dot plan"></span>Preparación</span>
+          <span><span class="dot run"></span>Ejecución</span>
+          <span><span class="dot close"></span>Cierre/Validación</span>
+        </div>
+
+        <div class="gantt-shell">
+          <div class="gantt-header">
+            <div>Actividad</div>
+            <div>23-29 Mar</div>
+            <div>30 Mar-05 Abr</div>
+            <div>06-12 Abr</div>
+            <div>13-15 Abr</div>
+          </div>
+
+          <div class="gantt-row">
+            <div class="task">
+              <strong>1.1 Matriz de riesgos y señales de alerta</strong>
+              <span>Guillermo Valdez / PROCOFA</span>
+            </div>
+            <div class="week"><div class="bar run">Ejecución</div></div>
+            <div class="week"><div class="bar close">Cierre</div></div>
+            <div class="week"></div>
+            <div class="week"></div>
+          </div>
+
+          <div class="gantt-row">
+            <div class="task">
+              <strong>4.1 Procedimientos de socios y difusión social</strong>
+              <span>Guillermo Valdez / PROCOFA</span>
+            </div>
+            <div class="week"><div class="bar run">Ejecución</div></div>
+            <div class="week"><div class="bar run">Ejecución</div></div>
+            <div class="week"><div class="bar close">Cierre</div></div>
+            <div class="week"></div>
+          </div>
+
+          <div class="gantt-row">
+            <div class="task">
+              <strong>2.8 Evidencias de monitoreo CCTV y taller</strong>
+              <span>Jesús Ignacio Ruiz / Josué Pérez</span>
+            </div>
+            <div class="week"><div class="bar run">Ejecución</div></div>
+            <div class="week"><div class="bar run">Ejecución</div></div>
+            <div class="week"><div class="bar close">Cierre</div></div>
+            <div class="week"></div>
+          </div>
+
+          <div class="gantt-row">
+            <div class="task">
+              <strong>5.3 Alertas automáticas y pruebas de evidencia</strong>
+              <span>Alan Gúmero / Josué Pérez / PROCOFA</span>
+            </div>
+            <div class="week"><div class="bar plan">Preparación</div></div>
+            <div class="week"><div class="bar run">Ejecución</div></div>
+            <div class="week"><div class="bar run">Ejecución</div></div>
+            <div class="week"><div class="bar close">Cierre</div></div>
+          </div>
+
+          <div class="gantt-row">
+            <div class="task">
+              <strong>7.2 Inspección entrada/salida con trazabilidad</strong>
+              <span>Jesús Ignacio Ruiz / Josué Pérez / PROCOFA</span>
+            </div>
+            <div class="week"></div>
+            <div class="week"><div class="bar plan">Preparación</div></div>
+            <div class="week"><div class="bar run">Ejecución</div></div>
+            <div class="week"><div class="bar close">Cierre</div></div>
+          </div>
+
+          <div class="gantt-row">
+            <div class="task">
+              <strong>10.1 Comunicado a proveedor y capacitación final</strong>
+              <span>Guillermo Valdez / PROCOFA</span>
+            </div>
+            <div class="week"></div>
+            <div class="week"><div class="bar plan">Preparación</div></div>
+            <div class="week"><div class="bar run">Ejecución</div></div>
+            <div class="week"><div class="bar run">Cierre Final</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Detalle de Actividades</h2>
+        <span class="subtitle">Plan completo y validable</span>
+      </div>
+      <div class="detail-wrap">
+        <div class="table-shell">
+          <table aria-label="Detalle de actividades">
+            <thead>
+              <tr>
+                <th>Sub-estándar</th>
+                <th>Responsables</th>
+                <th>Actividad</th>
+                <th>Entregable</th>
+                <th>Inicio</th>
+                <th>Fin</th>
+                <th>Prioridad</th>
+                <th>Estatus</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1.1</strong></td>
+                <td>Guillermo Valdez Razo / PROCOFA</td>
+                <td>Actualizar matriz de riesgos incluyendo lavado de dinero, financiamiento al terrorismo y trabajo forzoso/infantil.</td>
+                <td>Matriz versión 2026 con control de cambios.</td>
+                <td>23-mar-2026</td>
+                <td>27-mar-2026</td>
+                <td><span class="chip high">Alta</span></td>
+                <td><span class="chip plan">Planeado</span></td>
+              </tr>
+              <tr>
+                <td><strong>1.1</strong></td>
+                <td>Guillermo Valdez Razo / PROCOFA</td>
+                <td>Incorporar señales de alerta y controles según procedimiento vigente.</td>
+                <td>Matriz con evidencias de revisión.</td>
+                <td>27-mar-2026</td>
+                <td>31-mar-2026</td>
+                <td><span class="chip high">Alta</span></td>
+                <td><span class="chip plan">Planeado</span></td>
+              </tr>
+              <tr>
+                <td><strong>4.1</strong></td>
+                <td>Guillermo Valdez / PROCOFA</td>
+                <td>Actualizar procedimiento de socios comerciales.</td>
+                <td>Procedimiento aprobado y firmado.</td>
+                <td>24-mar-2026</td>
+                <td>01-abr-2026</td>
+                <td><span class="chip high">Alta</span></td>
+                <td><span class="chip plan">Planeado</span></td>
+              </tr>
+              <tr>
+                <td><strong>4.1</strong></td>
+                <td>Guillermo Valdez / PROCOFA</td>
+                <td>Crear programa de difusión de política social para empleados y socios comerciales.</td>
+                <td>Programa de difusión y comunicado.</td>
+                <td>31-mar-2026</td>
+                <td>04-abr-2026</td>
+                <td><span class="chip medium">Media</span></td>
+                <td><span class="chip plan">Planeado</span></td>
+              </tr>
+              <tr>
+                <td><strong>2.8</strong></td>
+                <td>Jesús Ignacio Ruiz / Josué Pérez</td>
+                <td>Presentar grabaciones que evidencien monitoreo de áreas críticas e instalar cámara en taller.</td>
+                <td>Carpeta de videos + acta de instalación.</td>
+                <td>25-mar-2026</td>
+                <td>03-abr-2026</td>
+                <td><span class="chip high">Alta</span></td>
+                <td><span class="chip plan">Planeado</span></td>
+              </tr>
+              <tr>
+                <td><strong>2.8</strong></td>
+                <td>Jesús Ignacio Ruiz / Josué Pérez</td>
+                <td>Registrar capturas del sistema de copias CCTV y días de retención.</td>
+                <td>Bitácora con capturas fechadas.</td>
+                <td>03-abr-2026</td>
+                <td>07-abr-2026</td>
+                <td><span class="chip medium">Media</span></td>
+                <td><span class="chip plan">Planeado</span></td>
+              </tr>
+              <tr>
+                <td><strong>5.3</strong></td>
+                <td>Alan Gúmero / Josué Pérez / PROCOFA</td>
+                <td>Parametrizar alertas automáticas en tiempo real y conservar evidencia de correo/celular.</td>
+                <td>Reporte de configuración y pruebas.</td>
+                <td>01-abr-2026</td>
+                <td>10-abr-2026</td>
+                <td><span class="chip high">Alta</span></td>
+                <td><span class="chip plan">Planeado</span></td>
+              </tr>
+              <tr>
+                <td><strong>7.2</strong></td>
+                <td>Jesús Ignacio Ruiz / Josué Pérez / PROCOFA</td>
+                <td>Ejecutar inspección de entrada/salida y generar evidencia CCTV con fecha, hora y unidad revisada.</td>
+                <td>Formato inspección 3 + evidencia indexada.</td>
+                <td>06-abr-2026</td>
+                <td>13-abr-2026</td>
+                <td><span class="chip high">Alta</span></td>
+                <td><span class="chip plan">Planeado</span></td>
+              </tr>
+              <tr>
+                <td><strong>10.1</strong></td>
+                <td>Guillermo Valdez / PROCOFA</td>
+                <td>Emitir comunicado a proveedor por hallazgo e impartir capacitación con evaluación teórico-práctica.</td>
+                <td>Acuse + listas + fotos + constancias.</td>
+                <td>07-abr-2026</td>
+                <td>15-abr-2026</td>
+                <td><span class="chip high">Alta</span></td>
+                <td><span class="chip run">En ejecución</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="footnote">
+          <strong>Control recomendado:</strong> realizar revisión integral el <strong>13 de abril de 2026</strong> para reservar los días 14 y 15 de abril al cierre documental y firma de evidencias pendientes.
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-line">Diseño ejecutivo alineado a línea visual PROCOFA</p>
+  </main>
+</body>
+</html>

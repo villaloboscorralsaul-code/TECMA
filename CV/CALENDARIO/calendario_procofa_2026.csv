@@ -1,0 +1,14 @@
+id,sub_estandar,responsables,actividad,entregable,supervisa,inicio,fin,prioridad,estatus
+1,1.1,"Guillermo Valdez Razo / PROCOFA","Actualizar matriz de riesgos e incluir lavado de dinero, financiamiento al terrorismo y trabajo forzoso/infantil.","Matriz version 2026 con control de cambios.","Por definir",2026-03-23,2026-03-27,Alta,Planeado
+2,1.1,"Guillermo Valdez Razo / PROCOFA","Incorporar senales de alerta y controles conforme al procedimiento vigente.","Matriz con senales de alerta y evidencia de revision.","Por definir",2026-03-27,2026-03-31,Alta,Planeado
+3,4.1,"Guillermo Valdez / PROCOFA","Actualizar procedimientos de socios comerciales.","Procedimiento aprobado y firmado.","Por definir",2026-03-24,2026-04-01,Alta,Planeado
+4,4.1,"Guillermo Valdez / PROCOFA","Crear programa de difusion de politica social para empleados y socios comerciales.","Programa de difusion y comunicado emitido.","Por definir",2026-03-31,2026-04-04,Media,Planeado
+5,2.8,"Jesus Ignacio Ruiz / Josue Perez","Presentar grabaciones que evidencien monitoreo de areas criticas.","Carpeta de evidencias en video con bitacora.","Por definir",2026-03-25,2026-04-02,Alta,Planeado
+6,2.8,"Jesus Ignacio Ruiz / Josue Perez","Instalar camara en taller y validar funcionamiento continuo.","Acta de instalacion, fotos y prueba funcional.","Por definir",2026-03-31,2026-04-03,Alta,Planeado
+7,2.8,"Jesus Ignacio Ruiz / Josue Perez","Registrar capturas del sistema de copias de CCTV y dias de retencion.","Bitacora con capturas fechadas y retencion documentada.","Por definir",2026-04-03,2026-04-07,Media,Planeado
+8,5.3,"Alan Gumero / Josue Perez / PROCOFA","Parametrizar alertas automaticas en tiempo real.","Configuracion validada y evidencia de reglas activas.","Por definir",2026-04-01,2026-04-08,Alta,Planeado
+9,5.3,"Alan Gumero / Josue Perez / PROCOFA","Conservar alertas de correo/celular y ejecutar pruebas de evidencia.","Reporte de pruebas con capturas y trazabilidad.","Por definir",2026-04-08,2026-04-10,Media,Planeado
+10,7.2,"Jesus Ignacio Ruiz / Josue Perez / PROCOFA","Ejecutar ejercicio de inspeccion de entrada y salida.","Formato de inspeccion 3 completado y firmado.","Por definir",2026-04-06,2026-04-10,Alta,Planeado
+11,7.2,"Jesus Ignacio Ruiz / Josue Perez / PROCOFA","Generar evidencia CCTV con fecha, hora y unidad revisada.","Paquete de evidencia fotografica/video indexado.","Por definir",2026-04-10,2026-04-13,Media,Planeado
+12,10.1,"Guillermo Valdez / PROCOFA","Enviar comunicado a proveedor sobre hallazgo y solicitud de acciones correctivas.","Comunicado emitido y acuse de recibido.","Por definir",2026-04-07,2026-04-09,Alta,Planeado
+13,10.1,"Guillermo Valdez / PROCOFA","Impartir capacitacion de inspeccion de seguridad, evaluar teoria/practica y documentar constancias.","Listas, fotos, evaluaciones y constancias firmadas.","Por definir",2026-04-09,2026-04-15,Alta,En ejecucion

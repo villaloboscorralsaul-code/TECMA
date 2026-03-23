@@ -1,0 +1,25 @@
+observacion_id,observacion_tts,responsable,colaboradores,hito_fecha_inicio,hito_fecha_fin,actividad_hito,entregable_hito,estado_objetivo
+1,"Actualizacion de analisis de riesgo (1.1)","Guillermo Valdez Razo","PROCOFA; control documental; compliance",2026-03-23,2026-03-24,"Levantamiento de insumos y version base","Matriz base con riesgos actuales",Completado
+1,"Actualizacion de analisis de riesgo (1.1)","Guillermo Valdez Razo","PROCOFA; control documental; compliance",2026-03-25,2026-03-26,"Incorporacion de riesgos LD/FT/trabajo forzoso e infantil","Matriz actualizada V2026",Completado
+1,"Actualizacion de analisis de riesgo (1.1)","Guillermo Valdez Razo","PROCOFA; control documental; compliance",2026-03-27,2026-03-27,"Revision interna y ajuste","Minuta de revision",Completado
+1,"Actualizacion de analisis de riesgo (1.1)","Guillermo Valdez Razo","PROCOFA; control documental; compliance",2026-03-30,2026-03-31,"Integracion de senales de alerta y controles","Matriz cerrada y firmada",Completado
+2,"Procedimiento de socios y difusion social (4.1)","Guillermo Valdez","PROCOFA; comunicacion interna; administracion de socios",2026-03-24,2026-03-26,"Diagnostico de procedimiento de socios","Lista de ajustes requeridos",Completado
+2,"Procedimiento de socios y difusion social (4.1)","Guillermo Valdez","PROCOFA; comunicacion interna; administracion de socios",2026-03-27,2026-03-31,"Redaccion final y aprobacion","Procedimiento aprobado",Completado
+2,"Procedimiento de socios y difusion social (4.1)","Guillermo Valdez","PROCOFA; comunicacion interna; administracion de socios",2026-04-01,2026-04-03,"Diseno de programa de difusion","Programa de difusion",Completado
+2,"Procedimiento de socios y difusion social (4.1)","Guillermo Valdez","PROCOFA; comunicacion interna; administracion de socios",2026-04-04,2026-04-04,"Emision de comunicado","Comunicado y evidencia de envio",Completado
+3,"Evidencia CCTV y camara en taller (2.8)","Jesus Ignacio Ruiz","Josue Perez; soporte CCTV; operacion de taller",2026-03-25,2026-03-27,"Levantamiento de evidencia de monitoreo","Carpeta de videos base",Completado
+3,"Evidencia CCTV y camara en taller (2.8)","Jesus Ignacio Ruiz","Josue Perez; soporte CCTV; operacion de taller",2026-03-30,2026-03-31,"Instalacion de camara en taller","Acta de instalacion",Completado
+3,"Evidencia CCTV y camara en taller (2.8)","Jesus Ignacio Ruiz","Josue Perez; soporte CCTV; operacion de taller",2026-04-01,2026-04-03,"Pruebas de grabacion y respaldos","Bitacora tecnica de pruebas",Completado
+3,"Evidencia CCTV y camara en taller (2.8)","Jesus Ignacio Ruiz","Josue Perez; soporte CCTV; operacion de taller",2026-04-06,2026-04-07,"Consolidacion de evidencias y retencion","Bitacora de retencion firmada",Completado
+4,"Parametrizacion de alertas automaticas (5.3)","Alan Gumero","Josue Perez; TI/soporte; PROCOFA",2026-04-01,2026-04-02,"Definicion de reglas y umbrales","Matriz de reglas",Completado
+4,"Parametrizacion de alertas automaticas (5.3)","Alan Gumero","Josue Perez; TI/soporte; PROCOFA",2026-04-03,2026-04-06,"Configuracion de alertas en sistema","Parametros cargados",Completado
+4,"Parametrizacion de alertas automaticas (5.3)","Alan Gumero","Josue Perez; TI/soporte; PROCOFA",2026-04-07,2026-04-08,"Pruebas de correo y celular","Evidencias de disparo de alertas",Completado
+4,"Parametrizacion de alertas automaticas (5.3)","Alan Gumero","Josue Perez; TI/soporte; PROCOFA",2026-04-09,2026-04-10,"Ajustes finales y documentacion","Reporte tecnico final",Completado
+5,"Inspeccion entrada/salida con trazabilidad (7.2)","Jesus Ignacio Ruiz","Josue Perez; PROCOFA; operacion",2026-04-06,2026-04-06,"Briefing y estandarizacion de formato","Formato inspeccion 3 validado",Completado
+5,"Inspeccion entrada/salida con trazabilidad (7.2)","Jesus Ignacio Ruiz","Josue Perez; PROCOFA; operacion",2026-04-07,2026-04-08,"Ejecucion de inspecciones","Registros de inspeccion",Completado
+5,"Inspeccion entrada/salida con trazabilidad (7.2)","Jesus Ignacio Ruiz","Josue Perez; PROCOFA; operacion",2026-04-09,2026-04-10,"Consolidacion de evidencia CCTV","Paquete de evidencia indexado",Completado
+5,"Inspeccion entrada/salida con trazabilidad (7.2)","Jesus Ignacio Ruiz","Josue Perez; PROCOFA; operacion",2026-04-13,2026-04-13,"Validacion final","Expediente firmado",Completado
+6,"Comunicado a proveedor y capacitacion (10.1)","Guillermo Valdez","PROCOFA; proveedor; facilitador de capacitacion",2026-04-07,2026-04-07,"Redaccion de comunicado por hallazgo","Comunicado final",Completado
+6,"Comunicado a proveedor y capacitacion (10.1)","Guillermo Valdez","PROCOFA; proveedor; facilitador de capacitacion",2026-04-08,2026-04-09,"Envio y seguimiento de acuse","Acuse de recibido",Completado
+6,"Comunicado a proveedor y capacitacion (10.1)","Guillermo Valdez","PROCOFA; proveedor; facilitador de capacitacion",2026-04-10,2026-04-13,"Ejecucion de capacitacion y evaluacion","Listas y evaluaciones",Completado
+6,"Comunicado a proveedor y capacitacion (10.1)","Guillermo Valdez","PROCOFA; proveedor; facilitador de capacitacion",2026-04-14,2026-04-15,"Integracion de constancias y cierre","Expediente final 10.1",Completado

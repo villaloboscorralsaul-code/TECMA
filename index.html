@@ -42,14 +42,19 @@
             </div>
 
             <div class="entry-form">
-              <label for="employeeName">Nombre del empleado</label>
-              <input
-                id="employeeName"
-                name="employeeName"
-                type="text"
-                maxlength="90"
-                placeholder="Ej. María Fernanda López"
-              />
+              <label for="employeeSelect">Selecciona tu nombre</label>
+              <select id="employeeSelect" name="employeeSelect">
+                <option value="">Cargando padrón...</option>
+              </select>
+
+              <div class="entry-inline-actions">
+                <button id="reloadRosterBtn" class="btn btn-secondary" type="button">
+                  Actualizar padrón
+                </button>
+              </div>
+
+              <p id="rosterStatus" class="roster-status">Consultando lista de usuarios...</p>
+              <p id="selectedUserMeta" class="selected-user-meta hidden"></p>
 
               <div class="photo-capture">
                 <label for="employeePhotoInput">Fotografía para certificado</label>
@@ -78,8 +83,11 @@
                 Iniciar proceso oficial
               </button>
 
+              <p id="entryMessage" class="entry-message"></p>
+
               <p class="disclaimer">
-                Completa nombre + fotografía para generar un certificado con identidad validada.
+                Selecciona tu nombre del padrón y captura fotografía para generar un certificado
+                oficial.
               </p>
             </div>
           </div>
@@ -122,6 +130,8 @@
                 prevención del trabajo forzado.
               </p>
             </div>
+
+            <p id="welcomeStatus" class="status-banner hidden"></p>
 
             <div class="symbol-row" aria-label="Simbología institucional">
               <span class="symbol-pill">Apretón de manos</span>
@@ -357,7 +367,7 @@
 
             <div class="certificate-actions no-print">
               <button id="printCertBtn" class="btn btn-primary" type="button">
-                Descargar / Imprimir certificado
+                Descargar certificado PDF
               </button>
               <button id="newSessionBtn" class="btn btn-secondary" type="button">
                 Iniciar nuevo proceso

@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cuadro Maestro TTS - PROCOFA</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap");
+
+    :root {
+      --procofa-green: #86b28a;
+      --procofa-gray: #5c6775;
+      --procofa-black: #000000;
+      --procofa-white: #ffffff;
+      --line: #d6dddb;
+      --soft: #f3f7f5;
+      --soft-2: #e9efec;
+      --text: #121820;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Montserrat", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 8% 0%, rgba(134, 178, 138, 0.2), transparent 40%),
+        radial-gradient(circle at 100% 0%, rgba(92, 103, 117, 0.2), transparent 42%),
+        linear-gradient(180deg, #e5ece8 0%, #eef3f0 100%);
+    }
+
+    .page {
+      width: min(2300px, calc(100vw - 10px));
+      margin: 6px auto 12px;
+    }
+
+    .board {
+      border: 2px solid var(--procofa-black);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--procofa-white);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.12);
+    }
+
+    .head {
+      border-bottom: 2px solid var(--procofa-black);
+      background:
+        linear-gradient(110deg, rgba(134, 178, 138, 0.97) 0%, rgba(92, 103, 117, 0.97) 62%, rgba(0, 0, 0, 0.95) 100%);
+      color: #fff;
+    }
+
+    .head-top {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 12px 14px 10px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .brand img {
+      width: 210px;
+      max-width: 25vw;
+      min-width: 140px;
+      height: auto;
+      display: block;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.22));
+    }
+
+    .title h1 {
+      margin: 0;
+      font-size: clamp(1rem, 1.45vw, 1.38rem);
+      line-height: 1.23;
+      font-weight: 900;
+      text-wrap: balance;
+    }
+
+    .title p {
+      margin: 4px 0 0;
+      font-size: 0.76rem;
+      line-height: 1.4;
+      color: rgba(255, 255, 255, 0.95);
+      max-width: 95ch;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid rgba(255, 255, 255, 0.24);
+    }
+
+    .meta div {
+      padding: 7px 8px 8px;
+      border-right: 1px solid rgba(255, 255, 255, 0.25);
+      text-align: center;
+    }
+
+    .meta div:last-child {
+      border-right: none;
+    }
+
+    .meta .k {
+      display: block;
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 700;
+      opacity: 0.92;
+    }
+
+    .meta .v {
+      display: block;
+      margin-top: 3px;
+      font-size: 0.84rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.2;
+    }
+
+    .spectator-strip {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr 1fr;
+      gap: 8px;
+      padding: 9px;
+      background: linear-gradient(180deg, #f9fbfa, #f2f6f4);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .spectator-card {
+      border: 1px solid #d5dfdc;
+      border-radius: 10px;
+      padding: 8px 9px;
+      background: #fff;
+    }
+
+    .spectator-card .k {
+      display: block;
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 800;
+      color: #3a4752;
+      margin-bottom: 3px;
+    }
+
+    .spectator-card .v {
+      display: block;
+      font-size: 0.73rem;
+      line-height: 1.38;
+      color: #111920;
+      font-weight: 600;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      background: var(--procofa-white);
+    }
+
+    .main-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1660px;
+      table-layout: auto;
+      font-size: 0.79rem;
+      line-height: 1.42;
+    }
+
+    .main-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: linear-gradient(180deg, #687483, #5c6775);
+      color: var(--procofa-white);
+      font-size: 0.64rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 900;
+      text-align: left;
+      border-bottom: 2px solid var(--procofa-black);
+      white-space: nowrap;
+      padding: 10px 10px;
+    }
+
+    .main-table th,
+    .main-table td {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      padding: 10px 10px;
+      overflow-wrap: anywhere;
+    }
+
+    .main-table th:last-child,
+    .main-table td:last-child {
+      border-right: none;
+    }
+
+    .main-table tbody tr:nth-child(odd) {
+      background: var(--procofa-white);
+    }
+
+    .main-table tbody tr:nth-child(even) {
+      background: var(--soft);
+    }
+
+    .main-table tbody tr:hover {
+      background: var(--soft-2);
+    }
+
+    .main-table thead th:first-child {
+      left: 0;
+      z-index: 4;
+      box-shadow: 2px 0 0 #4f5a67;
+    }
+
+    .main-table tbody td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      box-shadow: 2px 0 0 #d5ddda;
+    }
+
+    .main-table tbody tr:nth-child(odd) td:first-child {
+      background: #ffffff;
+    }
+
+    .main-table tbody tr:nth-child(even) td:first-child {
+      background: var(--soft);
+    }
+
+    .col-obs { min-width: 220px; }
+    .col-resp { min-width: 160px; }
+    .col-colab { min-width: 250px; }
+    .col-cron { min-width: 450px; }
+    .col-rev { min-width: 190px; }
+    .col-evi { min-width: 240px; }
+
+    .obs-title {
+      margin: 0 0 6px;
+      padding-left: 8px;
+      border-left: 4px solid var(--procofa-green);
+      font-weight: 800;
+      font-size: 0.82rem;
+      line-height: 1.36;
+      text-wrap: pretty;
+    }
+
+    .priority {
+      display: inline-block;
+      border: 1px solid #dcab95;
+      background: #fde9de;
+      color: #7d351f;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .person {
+      font-weight: 800;
+      color: #1f4029;
+      line-height: 1.35;
+    }
+
+    .clean-list {
+      margin: 0;
+      padding-left: 16px;
+    }
+
+    .clean-list li {
+      margin: 0 0 4px;
+    }
+
+    .clean-list li:last-child {
+      margin-bottom: 0;
+    }
+
+    .timeline {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .timeline li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 5px 0;
+      border-bottom: 1px dashed #ccd5d2;
+    }
+
+    .timeline li:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .when {
+      flex: 0 0 auto;
+      min-width: 88px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #dde7e1;
+      border: 1px solid #bac9c1;
+      color: #34454f;
+      font-size: 0.61rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.35;
+      white-space: nowrap;
+    }
+
+    .step {
+      flex: 1 1 auto;
+      min-width: 0;
+      line-height: 1.42;
+      color: #141d24;
+      text-wrap: pretty;
+    }
+
+    .check {
+      margin: 0 0 5px;
+      line-height: 1.35;
+    }
+
+    .check:last-child {
+      margin-bottom: 0;
+    }
+
+    .chip {
+      display: inline-block;
+      border: 1px solid #b6c9bb;
+      background: #e2efe4;
+      color: #1f5530;
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.61rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .foot {
+      padding: 9px 12px;
+      border-top: 2px solid var(--procofa-black);
+      background: linear-gradient(180deg, #f8faf9, #f1f5f3);
+      font-size: 0.71rem;
+      line-height: 1.4;
+    }
+
+    .foot strong {
+      color: #000;
+    }
+
+    .calendar {
+      border-top: 2px solid var(--procofa-black);
+      background: #fbfcfb;
+    }
+
+    .calendar-head {
+      padding: 8px 10px;
+      background: linear-gradient(90deg, #dde8e2, #e9eeec);
+      border-bottom: 1px solid var(--line);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-weight: 900;
+      color: #1d252c;
+    }
+
+    .calendar-wrap {
+      overflow: auto;
+    }
+
+    .cal-table {
+      width: 100%;
+      min-width: 1260px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 0.73rem;
+      line-height: 1.35;
+    }
+
+    .cal-table th,
+    .cal-table td {
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 7px 8px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .cal-table th:last-child,
+    .cal-table td:last-child {
+      border-right: none;
+    }
+
+    .cal-table thead th {
+      background: linear-gradient(180deg, #687483, #5c6775);
+      color: #fff;
+      font-size: 0.61rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 900;
+      white-space: nowrap;
+      border-bottom: 2px solid var(--procofa-black);
+    }
+
+    .cal-table thead th:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      box-shadow: 2px 0 0 #4f5a67;
+    }
+
+    .cal-table tbody td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      box-shadow: 2px 0 0 #d5ddda;
+      background: #f4f7f6;
+    }
+
+    .calendar-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--line);
+      background: #f7faf8;
+      font-size: 0.64rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #2a3740;
+    }
+
+    .calendar-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .calendar-legend i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+    }
+
+    .lg-plan { background: #e5eee8; }
+    .lg-run { background: #cfe2d2; }
+    .lg-check { background: #bccfbe; }
+    .lg-close { background: #8fb293; }
+
+    .cal-task {
+      text-align: left;
+      min-width: 270px;
+      font-weight: 700;
+      color: #1b242c;
+      background: #f4f7f6;
+    }
+
+    .wk-empty {
+      background: #fff;
+      color: #b7c0bd;
+    }
+
+    .wk-plan {
+      background: #e5eee8;
+      color: #335047;
+      font-weight: 800;
+    }
+
+    .wk-run {
+      background: #cfe2d2;
+      color: #1e4227;
+      font-weight: 900;
+    }
+
+    .wk-check {
+      background: #bccfbe;
+      color: #173a20;
+      font-weight: 900;
+    }
+
+    .wk-close {
+      background: #8fb293;
+      color: #fff;
+      font-weight: 900;
+    }
+
+    @media (max-width: 1450px) {
+      .page {
+        width: calc(100vw - 8px);
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .head-top {
+        grid-template-columns: 1fr;
+      }
+
+      .meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .spectator-strip {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .meta {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="board">
+      <header class="head">
+        <div class="head-top">
+          <div class="brand">
+            <img src="https://procofa.com/wp-content/uploads/2025/09/Logo-PROCOFA-Original-scaled.png" alt="Logo PROCOFA">
+          </div>
+          <div class="title">
+            <h1>Cuadro Maestro de Seguimiento de Evidencias TTS</h1>
+            <p>Formato único para presentar avance: <strong>responsable, colaboradores, cronograma por hitos, revisión/verificación y evidencia esperada</strong> de las 6 observaciones, con cierre al 15 de abril de 2026.</p>
+          </div>
+        </div>
+        <div class="meta">
+          <div><span class="k">Inicio</span><span class="v">23-mar-2026</span></div>
+          <div><span class="k">Corte de control</span><span class="v">13-abr-2026</span></div>
+          <div><span class="k">Cierre final</span><span class="v">15-abr-2026</span></div>
+          <div><span class="k">Observaciones TTS</span><span class="v">6</span></div>
+        </div>
+      </header>
+
+      <section class="spectator-strip" aria-label="Resumen rapido para espectador">
+        <article class="spectator-card">
+          <span class="k">Qué estoy viendo</span>
+          <span class="v">Un tablero único para entender rápido responsables, fechas exactas y evidencia de cierre por observación.</span>
+        </article>
+        <article class="spectator-card">
+          <span class="k">Qué revisar primero</span>
+          <span class="v">Observaciones 4, 5 y 6: concentran actividades críticas en abril y definen el cierre final.</span>
+        </article>
+        <article class="spectator-card">
+          <span class="k">Qué decisión tomar</span>
+          <span class="v">Si un hito no llega a “Validación”, se activa seguimiento diario hasta regularizar antes del 15-abr-2026.</span>
+        </article>
+      </section>
+
+      <div class="table-wrap">
+        <table class="main-table" aria-label="Cuadro maestro TTS">
+          <thead>
+            <tr>
+              <th class="col-obs">Observación TTS</th>
+              <th class="col-resp">Responsable</th>
+              <th class="col-colab">Colaboradores</th>
+              <th class="col-cron">Cronograma detallado</th>
+              <th class="col-rev">Revisión y verificación</th>
+              <th class="col-evi">Evidencia esperada</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <p class="obs-title">1) Actualización de análisis de riesgo (1.1)</p>
+                <span class="priority">Prioridad alta</span>
+              </td>
+              <td class="person">Guillermo Valdez Razo</td>
+              <td>
+                <ul class="clean-list">
+                  <li>PROCOFA (equipo técnico)</li>
+                  <li>Control documental</li>
+                  <li>Compliance / legal</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="timeline">
+                  <li><span class="when">23-24 MAR</span><span class="step">Levantamiento de insumos y versión base de la matriz.</span></li>
+                  <li><span class="when">25-26 MAR</span><span class="step">Integración de riesgos LD/FT y trabajo forzoso/infantil.</span></li>
+                  <li><span class="when">27 MAR</span><span class="step">Revisión técnica interna y ajustes.</span></li>
+                  <li><span class="when">30-31 MAR</span><span class="step">Integración de señales de alerta y controles; cierre técnico.</span></li>
+                </ul>
+              </td>
+              <td>
+                <p class="check"><strong>Comité:</strong> 26-mar y 31-mar</p>
+                <p class="check"><span class="chip">Cerrado 31-mar</span></p>
+              </td>
+              <td>
+                <ul class="clean-list">
+                  <li>Matriz de riesgo 2026 firmada.</li>
+                  <li>Control de cambios documentado.</li>
+                  <li>Evidencia de validación final.</li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <p class="obs-title">2) Procedimiento de socios y difusión social (4.1)</p>
+                <span class="priority">Prioridad alta</span>
+              </td>
+              <td class="person">Guillermo Valdez</td>
+              <td>
+                <ul class="clean-list">
+                  <li>PROCOFA</li>
+                  <li>Comunicación interna</li>
+                  <li>Administración de socios</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="timeline">
+                  <li><span class="when">24-26 MAR</span><span class="step">Diagnóstico del procedimiento actual de socios.</span></li>
+                  <li><span class="when">27-31 MAR</span><span class="step">Redacción final y aprobación interna.</span></li>
+                  <li><span class="when">01-03 ABR</span><span class="step">Diseño del programa de difusión.</span></li>
+                  <li><span class="when">04 ABR</span><span class="step">Emisión de comunicado y respaldo de envío.</span></li>
+                </ul>
+              </td>
+              <td>
+                <p class="check"><strong>Comité:</strong> 31-mar y 03-abr</p>
+                <p class="check"><span class="chip">Cerrado 04-abr</span></p>
+              </td>
+              <td>
+                <ul class="clean-list">
+                  <li>Procedimiento firmado.</li>
+                  <li>Programa de difusión aprobado.</li>
+                  <li>Acuse de comunicación emitida.</li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <p class="obs-title">3) Evidencia CCTV y cámara en taller (2.8)</p>
+                <span class="priority">Prioridad alta</span>
+              </td>
+              <td class="person">Jesús Ignacio Ruiz</td>
+              <td>
+                <ul class="clean-list">
+                  <li>Josué Pérez</li>
+                  <li>Soporte técnico CCTV</li>
+                  <li>Operación de taller</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="timeline">
+                  <li><span class="when">25-27 MAR</span><span class="step">Levantamiento de grabaciones de áreas críticas.</span></li>
+                  <li><span class="when">30-31 MAR</span><span class="step">Instalación de cámara en taller.</span></li>
+                  <li><span class="when">01-03 ABR</span><span class="step">Pruebas de grabación continua y respaldo.</span></li>
+                  <li><span class="when">06-07 ABR</span><span class="step">Bitácora final de retención.</span></li>
+                </ul>
+              </td>
+              <td>
+                <p class="check"><strong>Comité:</strong> 31-mar y 07-abr</p>
+                <p class="check"><span class="chip">Cerrado 07-abr</span></p>
+              </td>
+              <td>
+                <ul class="clean-list">
+                  <li>Videos y capturas de monitoreo.</li>
+                  <li>Acta/fotos de instalación.</li>
+                  <li>Bitácora de retención firmada.</li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <p class="obs-title">4) Parametrización de alertas automáticas (5.3)</p>
+                <span class="priority">Prioridad alta</span>
+              </td>
+              <td class="person">Alan Gúmero</td>
+              <td>
+                <ul class="clean-list">
+                  <li>Josué Pérez</li>
+                  <li>TI / soporte</li>
+                  <li>PROCOFA</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="timeline">
+                  <li><span class="when">01-02 ABR</span><span class="step">Definición de reglas y umbrales de alertas.</span></li>
+                  <li><span class="when">03-06 ABR</span><span class="step">Configuración técnica en sistema.</span></li>
+                  <li><span class="when">07-08 ABR</span><span class="step">Pruebas de correo/celular con trazabilidad.</span></li>
+                  <li><span class="when">09-10 ABR</span><span class="step">Ajustes finales y documentación de cierre.</span></li>
+                </ul>
+              </td>
+              <td>
+                <p class="check"><strong>Comité:</strong> 03-abr y 10-abr</p>
+                <p class="check"><span class="chip">Cerrado 10-abr</span></p>
+              </td>
+              <td>
+                <ul class="clean-list">
+                  <li>Reporte técnico de configuración.</li>
+                  <li>Evidencias de notificación.</li>
+                  <li>Trazas de pruebas y ajustes.</li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <p class="obs-title">5) Inspección entrada/salida con trazabilidad (7.2)</p>
+                <span class="priority">Prioridad alta</span>
+              </td>
+              <td class="person">Jesús Ignacio Ruiz</td>
+              <td>
+                <ul class="clean-list">
+                  <li>Josué Pérez</li>
+                  <li>PROCOFA</li>
+                  <li>Personal operativo</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="timeline">
+                  <li><span class="when">06 ABR</span><span class="step">Estandarización del formato de inspección 3.</span></li>
+                  <li><span class="when">07-08 ABR</span><span class="step">Ejecución de inspecciones entrada/salida.</span></li>
+                  <li><span class="when">09-10 ABR</span><span class="step">Consolidación de evidencia CCTV con fecha/hora/unidad.</span></li>
+                  <li><span class="when">13 ABR</span><span class="step">Validación integral del expediente.</span></li>
+                </ul>
+              </td>
+              <td>
+                <p class="check"><strong>Comité:</strong> 10-abr y 13-abr</p>
+                <p class="check"><span class="chip">Cerrado 13-abr</span></p>
+              </td>
+              <td>
+                <ul class="clean-list">
+                  <li>Formato de inspección 3 firmado.</li>
+                  <li>Paquete indexado de evidencia CCTV.</li>
+                  <li>Minuta de validación final.</li>
+                </ul>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <p class="obs-title">6) Comunicado a proveedor y capacitación (10.1)</p>
+                <span class="priority">Prioridad alta</span>
+              </td>
+              <td class="person">Guillermo Valdez</td>
+              <td>
+                <ul class="clean-list">
+                  <li>PROCOFA</li>
+                  <li>Proveedor involucrado</li>
+                  <li>Facilitador de capacitación</li>
+                </ul>
+              </td>
+              <td>
+                <ul class="timeline">
+                  <li><span class="when">07 ABR</span><span class="step">Redacción y autorización del comunicado por hallazgo.</span></li>
+                  <li><span class="when">08-09 ABR</span><span class="step">Envío, acuse y seguimiento de respuesta.</span></li>
+                  <li><span class="when">10-13 ABR</span><span class="step">Capacitación y evaluación teórico-práctica.</span></li>
+                  <li><span class="when">14-15 ABR</span><span class="step">Integración de constancias y cierre final.</span></li>
+                </ul>
+              </td>
+              <td>
+                <p class="check"><strong>Comité:</strong> 09-abr, 13-abr y 15-abr</p>
+                <p class="check"><span class="chip">Cerrado 15-abr</span></p>
+              </td>
+              <td>
+                <ul class="clean-list">
+                  <li>Comunicado con acuse de recibido.</li>
+                  <li>Listas, fotos y evaluaciones.</li>
+                  <li>Constancias y expediente final.</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <section class="calendar" aria-label="Calendario TTS">
+        <div class="calendar-head">Calendario por fechas exactas de ejecución y verificación (Marzo-Abril 2026)</div>
+        <div class="calendar-legend">
+          <span><i class="lg-plan"></i>Preparación</span>
+          <span><i class="lg-run"></i>Ejecución</span>
+          <span><i class="lg-check"></i>Validación</span>
+          <span><i class="lg-close"></i>Cierre</span>
+        </div>
+        <div class="calendar-wrap">
+          <table class="cal-table" aria-label="Calendario semanal TTS">
+            <thead>
+              <tr>
+                <th>Observación</th>
+                <th>23-24 Mar</th>
+                <th>25-27 Mar</th>
+                <th>30 Mar-03 Abr</th>
+                <th>06-08 Abr</th>
+                <th>09-10 Abr</th>
+                <th>13-15 Abr</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="cal-task">1.1 Actualización de análisis de riesgo</td>
+                <td class="wk-plan">Preparación</td>
+                <td class="wk-run">Ejecución</td>
+                <td class="wk-run">Ejecución</td>
+                <td class="wk-close">Cierre técnico</td>
+                <td class="wk-empty">-</td>
+                <td class="wk-check">Verificación</td>
+              </tr>
+              <tr>
+                <td class="cal-task">4.1 Procedimiento socios + difusión</td>
+                <td class="wk-plan">Preparación</td>
+                <td class="wk-run">Ejecución</td>
+                <td class="wk-run">Ejecución</td>
+                <td class="wk-check">Validación</td>
+                <td class="wk-close">Cierre</td>
+                <td class="wk-empty">-</td>
+              </tr>
+              <tr>
+                <td class="cal-task">2.8 Evidencia CCTV y cámara taller</td>
+                <td class="wk-plan">Preparación</td>
+                <td class="wk-run">Ejecución</td>
+                <td class="wk-run">Ejecución</td>
+                <td class="wk-check">Validación</td>
+                <td class="wk-close">Cierre</td>
+                <td class="wk-empty">-</td>
+              </tr>
+              <tr>
+                <td class="cal-task">5.3 Parametrización de alertas</td>
+                <td class="wk-empty">-</td>
+                <td class="wk-empty">-</td>
+                <td class="wk-plan">Preparación</td>
+                <td class="wk-run">Ejecución</td>
+                <td class="wk-check">Validación</td>
+                <td class="wk-close">Cierre</td>
+              </tr>
+              <tr>
+                <td class="cal-task">7.2 Inspección entrada/salida</td>
+                <td class="wk-empty">-</td>
+                <td class="wk-empty">-</td>
+                <td class="wk-plan">Preparación</td>
+                <td class="wk-run">Ejecución</td>
+                <td class="wk-check">Validación</td>
+                <td class="wk-close">Cierre</td>
+              </tr>
+              <tr>
+                <td class="cal-task">10.1 Comunicado + capacitación</td>
+                <td class="wk-empty">-</td>
+                <td class="wk-empty">-</td>
+                <td class="wk-empty">-</td>
+                <td class="wk-plan">Preparación</td>
+                <td class="wk-run">Ejecución</td>
+                <td class="wk-close">Cierre final</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="foot">
+        <strong>Regla de cierre TTS:</strong> cada observación se considera cerrada cuando el responsable entrega evidencia completa, trazable (fecha y autor) y validada en comité.
+      </footer>
+    </section>
+  </main>
+</body>
+</html>

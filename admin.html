@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel Admin TECMA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Open+Sans:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <header class="admin-header">
+        <img src="/assets/tecma-logo.png" alt="TECMA" class="admin-logo" />
+        <div>
+          <h1>Panel de Seguimiento TECMA</h1>
+          <p>Control de pendientes, en proceso, no aprobados y completados</p>
+        </div>
+      </header>
+
+      <section class="admin-card">
+        <h2>Acceso Admin</h2>
+        <p id="accessInfo" class="hint"></p>
+        <p id="accessError" class="error hidden">
+          Falta la llave admin en la URL. Usa: <code>/admin?key=TU_LLAVE</code>
+        </p>
+      </section>
+
+      <section class="kpi-grid admin-card">
+        <article class="kpi">
+          <p>Total usuarios</p>
+          <strong id="kpiTotal">0</strong>
+        </article>
+        <article class="kpi">
+          <p>Pendientes</p>
+          <strong id="kpiPendiente">0</strong>
+        </article>
+        <article class="kpi">
+          <p>En proceso</p>
+          <strong id="kpiProceso">0</strong>
+        </article>
+        <article class="kpi">
+          <p>No aprobado</p>
+          <strong id="kpiNoAprobado">0</strong>
+        </article>
+        <article class="kpi kpi-success">
+          <p>Completados</p>
+          <strong id="kpiCompletado">0</strong>
+        </article>
+      </section>
+
+      <section class="admin-card">
+        <h2>Alta Manual de Usuario</h2>
+        <form id="addUserForm" class="form-grid">
+          <label>
+            Nombre completo
+            <input id="newUserName" type="text" maxlength="120" required />
+          </label>
+          <label>
+            Código interno (opcional)
+            <input id="newUserCode" type="text" maxlength="80" />
+          </label>
+          <label>
+            Área (opcional)
+            <input id="newUserArea" type="text" maxlength="120" />
+          </label>
+          <button type="submit" class="btn btn-primary">Agregar usuario</button>
+        </form>
+        <p id="addUserMessage" class="hint"></p>
+      </section>
+
+      <section class="admin-card">
+        <div class="toolbar">
+          <div class="toolbar-group">
+            <label for="statusFilter">Filtro de estado</label>
+            <select id="statusFilter">
+              <option value="ALL">Todos</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="EN_PROCESO">En proceso</option>
+              <option value="NO_APROBADO">No aprobado</option>
+              <option value="COMPLETADO">Completado</option>
+            </select>
+          </div>
+
+          <div class="toolbar-actions">
+            <button id="refreshBtn" type="button" class="btn btn-secondary">Actualizar</button>
+            <button id="downloadZipBtn" type="button" class="btn btn-primary">
+              Descargar ZIP de completados
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Código</th>
+                <th>Área</th>
+                <th>Estado</th>
+                <th>Score</th>
+                <th>Intentos</th>
+                <th>Folio</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

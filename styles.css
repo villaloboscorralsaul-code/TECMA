@@ -172,7 +172,7 @@ p {
   color: var(--tecma-navy);
 }
 
-.entry-form input[type="text"],
+.entry-form select,
 .photo-input {
   width: 100%;
   border: 1px solid #bec8d9;
@@ -183,11 +183,49 @@ p {
   color: var(--tecma-navy-deep);
 }
 
-.entry-form input[type="text"]:focus,
+.entry-form select:focus,
 .photo-input:focus {
   outline: none;
   border-color: var(--tecma-orange);
   box-shadow: 0 0 0 4px rgba(244, 122, 32, 0.15);
+}
+
+.entry-inline-actions {
+  display: grid;
+}
+
+.entry-inline-actions .btn {
+  min-height: 42px;
+}
+
+.roster-status {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #43506b;
+  font-weight: 700;
+}
+
+.selected-user-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--tecma-gray);
+  font-weight: 700;
+}
+
+.entry-message {
+  margin: 0;
+  min-height: 1.3rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #305c9b;
+}
+
+.entry-message.error {
+  color: #9b3832;
+}
+
+.entry-message.success {
+  color: #1f6845;
 }
 
 .photo-capture {
@@ -438,6 +476,17 @@ p {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.status-banner {
+  margin: 0 0 14px;
+  border-radius: 10px;
+  border: 1px solid #c9d8f2;
+  background: #eef4ff;
+  color: #22457e;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 9px 11px;
 }
 
 .symbol-pill {
