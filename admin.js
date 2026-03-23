@@ -4,6 +4,7 @@ const state = {
   overview: null,
   loading: false,
 };
+const REQUEST_TIMEOUT_MS = 45000;
 
 const refs = {
   accessInfo: document.querySelector("#accessInfo"),
@@ -65,8 +66,39 @@ function buildApiUrl(path) {
   return `${path}${prefix}key=${encodeURIComponent(state.adminKey)}`;
 }
 
+function setAdminMessage(message) {
+  refs.addUserMessage.textContent = message || "";
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw new Error("La solicitud tardó demasiado. Intenta nuevamente.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+function openDownloadUrl(url) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.click();
+}
+
 async function apiRequest(path, options = {}) {
-  const response = await fetch(buildApiUrl(path), {
+  const response = await fetchWithTimeout(buildApiUrl(path), {
     method: options.method || "GET",
     headers: {
       "content-type": "application/json",
@@ -98,7 +130,7 @@ async function refreshAll() {
     setLoading(true);
     await Promise.all([loadOverview(), loadUsers()]);
   } catch (err) {
-    refs.addUserMessage.textContent = `Error: ${err.message}`;
+    setAdminMessage(`Error: ${err.message}`);
   } finally {
     setLoading(false);
   }
@@ -171,7 +203,7 @@ function renderUsers() {
     button.addEventListener("click", async () => {
       const certId = button.getAttribute("data-cert-id");
       if (!certId) return;
-      await downloadOne(certId);
+      await downloadOne(certId, button);
     });
   });
 }
@@ -182,12 +214,12 @@ async function createUser() {
   const area = refs.newUserArea.value.trim();
 
   if (!nombre) {
-    refs.addUserMessage.textContent = "Captura el nombre del usuario.";
+    setAdminMessage("Captura el nombre del usuario.");
     return;
   }
 
   try {
-    refs.addUserMessage.textContent = "Guardando usuario...";
+    setAdminMessage("Guardando usuario...");
 
     await apiRequest("/api/users", {
       method: "POST",
@@ -199,56 +231,70 @@ async function createUser() {
     });
 
     refs.addUserForm.reset();
-    refs.addUserMessage.textContent = "Usuario agregado correctamente.";
+    setAdminMessage("Usuario agregado correctamente.");
     await refreshAll();
   } catch (err) {
-    refs.addUserMessage.textContent = `Error al crear usuario: ${err.message}`;
+    setAdminMessage(`Error al crear usuario: ${err.message}`);
   }
 }
 
-async function downloadOne(certificateId) {
+async function downloadOne(certificateId, triggerButton) {
+  const originalText = triggerButton ? triggerButton.textContent : "Descargar";
+  let pendingWindow = null;
+
+  if (triggerButton) {
+    triggerButton.disabled = true;
+    triggerButton.textContent = "Preparando...";
+  }
+
   try {
+    pendingWindow = window.open("", "_blank", "noopener,noreferrer");
+  } catch {
+    pendingWindow = null;
+  }
+
+  try {
+    setAdminMessage("Generando enlace de descarga...");
     const data = await apiRequest(`/api/certificates/${encodeURIComponent(certificateId)}/download`);
-    if (data.download_url) {
-      window.open(data.download_url, "_blank", "noopener,noreferrer");
+    if (!data.download_url) {
+      throw new Error("No se recibió URL de descarga.");
     }
+
+    if (pendingWindow && !pendingWindow.closed) {
+      pendingWindow.location.href = data.download_url;
+    } else {
+      openDownloadUrl(data.download_url);
+    }
+
+    setAdminMessage(`Descarga iniciada${data.folio ? ` (${data.folio})` : ""}.`);
   } catch (err) {
-    refs.addUserMessage.textContent = `Error al descargar certificado: ${err.message}`;
+    if (pendingWindow && !pendingWindow.closed) {
+      pendingWindow.close();
+    }
+    setAdminMessage(`Error al descargar certificado: ${err.message}`);
+  } finally {
+    if (triggerButton) {
+      triggerButton.disabled = false;
+      triggerButton.textContent = originalText;
+    }
   }
 }
 
 async function downloadZip() {
   try {
     refs.downloadZipBtn.disabled = true;
-    refs.downloadZipBtn.textContent = "Generando ZIP...";
+    refs.downloadZipBtn.textContent = "Abriendo descarga...";
+    setAdminMessage("Se abrirá una pestaña para preparar el ZIP.");
 
-    const response = await fetch(buildApiUrl("/api/certificates/export-zip"), {
-      method: "POST",
-    });
-
-    if (!response.ok) {
-      let message = "No fue posible generar el ZIP";
-      try {
-        const payload = await response.json();
-        message = payload.error || message;
-      } catch {
-        // no-op
-      }
-      throw new Error(message);
-    }
-
-    const blob = await response.blob();
-    const link = document.createElement("a");
-    const objectUrl = URL.createObjectURL(blob);
-    link.href = objectUrl;
-    link.download = "tecma-certificados-completados.zip";
-    link.click();
-    URL.revokeObjectURL(objectUrl);
+    const zipUrl = buildApiUrl("/api/certificates/export-zip");
+    openDownloadUrl(zipUrl);
   } catch (err) {
-    refs.addUserMessage.textContent = `Error ZIP: ${err.message}`;
+    setAdminMessage(`Error ZIP: ${err.message}`);
   } finally {
-    refs.downloadZipBtn.disabled = false;
-    refs.downloadZipBtn.textContent = "Descargar ZIP de completados";
+    window.setTimeout(() => {
+      refs.downloadZipBtn.disabled = false;
+      refs.downloadZipBtn.textContent = "Descargar ZIP de completados";
+    }, 900);
   }
 }
 

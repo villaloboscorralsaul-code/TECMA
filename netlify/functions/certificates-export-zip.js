@@ -9,7 +9,7 @@ const {
 } = require("./_lib/common");
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") {
+  if (event.httpMethod !== "POST" && event.httpMethod !== "GET") {
     return json(405, { error: "Method not allowed" });
   }
 
