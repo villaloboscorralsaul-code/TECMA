@@ -872,6 +872,8 @@ function redrawQrCanvases() {
 }
 
 function drawBrandQr(canvas, payload) {
+  const decorate = canvas.id === "certQr";
+
   if (
     typeof window !== "undefined" &&
     window.QRCode &&
@@ -882,8 +884,8 @@ function drawBrandQr(canvas, payload) {
       payload,
       {
         width: canvas.width,
-        margin: 1,
-        errorCorrectionLevel: "H",
+        margin: decorate ? 2 : 4,
+        errorCorrectionLevel: decorate ? "H" : "M",
         color: {
           dark: "#1a2b4c",
           light: "#ffffff",
@@ -891,20 +893,22 @@ function drawBrandQr(canvas, payload) {
       },
       (error) => {
         if (error) {
-          drawBrandQrFallback(canvas, payload);
+          drawBrandQrFallback(canvas, payload, decorate);
           return;
         }
 
-        decorateQrCanvas(canvas);
+        if (decorate) {
+          decorateQrCanvas(canvas);
+        }
       }
     );
     return;
   }
 
-  drawBrandQrFallback(canvas, payload);
+  drawBrandQrFallback(canvas, payload, decorate);
 }
 
-function drawBrandQrFallback(canvas, payload) {
+function drawBrandQrFallback(canvas, payload, decorate = false) {
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     return;
@@ -958,7 +962,10 @@ function drawBrandQrFallback(canvas, payload) {
   drawFinderPattern(ctx, margin, moduleSize, 0, 0);
   drawFinderPattern(ctx, margin, moduleSize, size - 7, 0);
   drawFinderPattern(ctx, margin, moduleSize, 0, size - 7);
-  decorateQrCanvas(canvas);
+
+  if (decorate) {
+    decorateQrCanvas(canvas);
+  }
 }
 
 function decorateQrCanvas(canvas) {
@@ -969,7 +976,7 @@ function decorateQrCanvas(canvas) {
 
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
-  const logoRadius = canvas.width * 0.12;
+  const logoRadius = canvas.width * 0.08;
 
   ctx.fillStyle = "#ffffff";
   ctx.beginPath();
@@ -1000,17 +1007,8 @@ function decorateQrCanvas(canvas) {
   }
 
   ctx.strokeStyle = "#1a2b4c";
-  ctx.lineWidth = 6;
-  ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
-
-  ctx.fillStyle = "#f47a20";
-  ctx.fillRect(3, 3, canvas.width - 6, 6);
-
-  ctx.fillStyle = "#2e9d5d";
-  ctx.fillRect(3, canvas.height - 9, (canvas.width - 6) / 2, 6);
-
-  ctx.fillStyle = "#1a2b4c";
-  ctx.fillRect(3 + (canvas.width - 6) / 2, canvas.height - 9, (canvas.width - 6) / 2, 6);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
 }
 
 function drawFinderPattern(ctx, margin, moduleSize, gridX, gridY) {
