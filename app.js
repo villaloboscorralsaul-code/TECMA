@@ -1,6 +1,7 @@
 const MIN_POLICY_SECONDS = 12;
 const PASSING_SCORE = 4;
 const TECMA_LOGO_PATH = "/assets/tecma-logo.png";
+const OFFICIAL_ENTRY_QR_URL = "https://celebrated-profiterole-50371a.netlify.app/";
 const PHOTO_MAX_EDGE = 960;
 
 const quizQuestions = [
@@ -118,6 +119,7 @@ const refs = {
   entryPhotoPreview: document.querySelector("#entryPhotoPreview"),
   photoStatus: document.querySelector("#photoStatus"),
   entryQr: document.querySelector("#entryQr"),
+  entryQrLink: document.querySelector("#entryQrLink"),
   scanBtn: document.querySelector("#scanBtn"),
 
   steps: Array.from(document.querySelectorAll(".step")),
@@ -415,10 +417,11 @@ function setActiveStep(stepId) {
 }
 
 function seedEntryQr() {
-  const qrUrl = new URL(window.location.origin + window.location.pathname);
-  qrUrl.searchParams.set("via", "qr");
-  const payload = qrUrl.toString();
+  const payload = OFFICIAL_ENTRY_QR_URL;
   refs.entryQr.dataset.payload = payload;
+  if (refs.entryQrLink) {
+    refs.entryQrLink.href = payload;
+  }
   drawBrandQr(refs.entryQr, payload);
 }
 
@@ -873,6 +876,7 @@ function redrawQrCanvases() {
 
 function drawBrandQr(canvas, payload) {
   const decorate = canvas.id === "certQr";
+  const darkColor = decorate ? "#1a2b4c" : "#000000";
 
   if (
     typeof window !== "undefined" &&
@@ -887,7 +891,7 @@ function drawBrandQr(canvas, payload) {
         margin: decorate ? 2 : 4,
         errorCorrectionLevel: decorate ? "H" : "M",
         color: {
-          dark: "#1a2b4c",
+          dark: darkColor,
           light: "#ffffff",
         },
       },
@@ -905,7 +909,52 @@ function drawBrandQr(canvas, payload) {
     return;
   }
 
+  if (
+    typeof window !== "undefined" &&
+    typeof window.QRCode === "function" &&
+    drawBrandQrWithQrCodeJs(canvas, payload, darkColor)
+  ) {
+    if (decorate) {
+      decorateQrCanvas(canvas);
+    }
+    return;
+  }
+
   drawBrandQrFallback(canvas, payload, decorate);
+}
+
+function drawBrandQrWithQrCodeJs(canvas, payload, darkColor) {
+  try {
+    const temp = document.createElement("div");
+    temp.style.position = "fixed";
+    temp.style.left = "-9999px";
+    temp.style.top = "-9999px";
+    document.body.appendChild(temp);
+
+    const level = window.QRCode.CorrectLevel ? window.QRCode.CorrectLevel.M : 0;
+    new window.QRCode(temp, {
+      text: payload,
+      width: canvas.width,
+      height: canvas.height,
+      colorDark: darkColor,
+      colorLight: "#ffffff",
+      correctLevel: level,
+    });
+
+    const generatedCanvas = temp.querySelector("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!generatedCanvas || !ctx) {
+      document.body.removeChild(temp);
+      return false;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(generatedCanvas, 0, 0, canvas.width, canvas.height);
+    document.body.removeChild(temp);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function drawBrandQrFallback(canvas, payload, decorate = false) {

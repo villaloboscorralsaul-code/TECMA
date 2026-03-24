@@ -37,8 +37,11 @@
 
           <div class="entry-grid">
             <div class="qr-wrap">
-              <canvas id="entryQr" width="240" height="240" aria-label="QR de ingreso"></canvas>
+              <canvas id="entryQr" width="300" height="300" aria-label="QR de ingreso"></canvas>
               <p class="qr-caption">QR oficial con identidad TECMA</p>
+              <a id="entryQrLink" class="qr-link" href="#" target="_blank" rel="noopener noreferrer">
+                Abrir enlace directo
+              </a>
             </div>
 
             <div class="entry-form">
@@ -382,7 +385,7 @@
       </section>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="/assets/vendor/qrcode.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
