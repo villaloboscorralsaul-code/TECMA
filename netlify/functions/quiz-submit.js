@@ -31,6 +31,23 @@ exports.handler = async (event) => {
     const supabase = getSupabaseAdmin();
     const now = nowIso();
 
+    const { data: progress, error: progressError } = await supabase
+      .from("progreso_test")
+      .select("estado,attempt_count,recognition_id")
+      .eq("usuario_id", userId)
+      .maybeSingle();
+
+    if (progressError) {
+      return json(500, { error: progressError.message });
+    }
+
+    if (progress?.estado === STATUS.COMPLETADO || progress?.recognition_id) {
+      return json(403, {
+        blocked: true,
+        error: "El flujo ya está completado y bloqueado para nuevos intentos.",
+      });
+    }
+
     const { error: attemptError } = await supabase.from("intentos_quiz").insert({
       usuario_id: userId,
       score,
@@ -43,21 +60,7 @@ exports.handler = async (event) => {
       return json(500, { error: attemptError.message });
     }
 
-    const { data: progress, error: progressError } = await supabase
-      .from("progreso_test")
-      .select("estado,attempt_count")
-      .eq("usuario_id", userId)
-      .maybeSingle();
-
-    if (progressError) {
-      return json(500, { error: progressError.message });
-    }
-
-    const nextStatus = progress?.estado === STATUS.COMPLETADO
-      ? STATUS.COMPLETADO
-      : passed
-        ? STATUS.EN_PROCESO
-        : STATUS.NO_APROBADO;
+    const nextStatus = passed ? STATUS.EN_PROCESO : STATUS.NO_APROBADO;
 
     if (!progress) {
       const { error: createProgressError } = await supabase.from("progreso_test").insert({
@@ -93,6 +96,15 @@ exports.handler = async (event) => {
       action: "QUIZ_SUBMITTED",
       metadata: { score, passed },
     });
+
+    if (!passed) {
+      await logAudit(supabase, {
+        usuarioId: userId,
+        actor: "SYSTEM",
+        action: "QUIZ_FAILED_ALERT",
+        metadata: { score, required: PASSING_SCORE },
+      });
+    }
 
     return json(200, {
       passed,

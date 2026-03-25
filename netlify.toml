@@ -38,23 +38,23 @@
   status = 200
 
 [[redirects]]
-  from = "/api/certificates/generate"
-  to = "/.netlify/functions/certificates-generate"
+  from = "/api/recognitions/generate"
+  to = "/.netlify/functions/recognitions-generate"
   status = 200
 
 [[redirects]]
-  from = "/api/certificates/export-zip"
-  to = "/.netlify/functions/certificates-export-zip"
+  from = "/api/recognitions/export-zip"
+  to = "/.netlify/functions/recognitions-export-zip"
   status = 200
 
 [[redirects]]
-  from = "/api/certificates/verify"
-  to = "/.netlify/functions/certificates-verify"
+  from = "/api/recognitions/verify"
+  to = "/.netlify/functions/recognitions-verify"
   status = 200
 
 [[redirects]]
-  from = "/api/certificates/:id/download"
-  to = "/.netlify/functions/certificates-download?id=:id"
+  from = "/api/recognitions/:id/download"
+  to = "/.netlify/functions/recognitions-download?id=:id"
   status = 200
 
 [[redirects]]

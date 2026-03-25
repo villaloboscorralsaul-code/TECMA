@@ -54,6 +54,15 @@
       </section>
 
       <section class="admin-card">
+        <div class="alerts-head">
+          <h2>Alertas del Proceso</h2>
+          <p class="hint">Registros de no aprobados e inconclusos para seguimiento inmediato.</p>
+        </div>
+        <p id="alertsSummary" class="hint"></p>
+        <div id="alertsList" class="alerts-list"></div>
+      </section>
+
+      <section class="admin-card">
         <h2>Alta Manual de Usuario</h2>
         <form id="addUserForm" class="form-grid">
           <label>
@@ -61,8 +70,8 @@
             <input id="newUserName" type="text" maxlength="120" required />
           </label>
           <label>
-            Código interno (opcional)
-            <input id="newUserCode" type="text" maxlength="80" />
+            Número de empleado (obligatorio)
+            <input id="newUserCode" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="20" required />
           </label>
           <label>
             Área (opcional)
@@ -89,7 +98,7 @@
           <div class="toolbar-actions">
             <button id="refreshBtn" type="button" class="btn btn-secondary">Actualizar</button>
             <button id="downloadZipBtn" type="button" class="btn btn-primary">
-              Descargar ZIP de completados
+              Descargar ZIP de reconocimientos completados
             </button>
           </div>
         </div>

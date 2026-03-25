@@ -19,13 +19,13 @@ exports.handler = async (event) => {
     const id = String(event.queryStringParameters?.id || "").trim();
 
     if (!id) {
-      return json(400, { error: "Certificate id is required" });
+      return json(400, { error: "Recognition id is required" });
     }
 
     const supabase = getSupabaseAdmin();
 
-    const { data: cert, error } = await supabase
-      .from("certificados")
+    const { data: recognition, error } = await supabase
+      .from("reconocimientos")
       .select("id,folio,file_path")
       .eq("id", id)
       .maybeSingle();
@@ -34,15 +34,15 @@ exports.handler = async (event) => {
       return json(500, { error: error.message });
     }
 
-    if (!cert) {
-      return json(404, { error: "Certificate not found" });
+    if (!recognition) {
+      return json(404, { error: "Recognition not found" });
     }
 
-    const downloadUrl = await createSignedDownloadUrl(supabase, cert.file_path, 60 * 10);
+    const downloadUrl = await createSignedDownloadUrl(supabase, recognition.file_path, 60 * 10);
 
     return json(200, {
-      id: cert.id,
-      folio: cert.folio,
+      id: recognition.id,
+      folio: recognition.folio,
       download_url: downloadUrl,
     });
   } catch (err) {

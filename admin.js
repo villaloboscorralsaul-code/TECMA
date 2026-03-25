@@ -1,6 +1,7 @@
 const state = {
   adminKey: "",
   users: [],
+  alerts: [],
   overview: null,
   loading: false,
 };
@@ -16,6 +17,8 @@ const refs = {
   kpiProceso: document.querySelector("#kpiProceso"),
   kpiNoAprobado: document.querySelector("#kpiNoAprobado"),
   kpiCompletado: document.querySelector("#kpiCompletado"),
+  alertsSummary: document.querySelector("#alertsSummary"),
+  alertsList: document.querySelector("#alertsList"),
 
   addUserForm: document.querySelector("#addUserForm"),
   newUserName: document.querySelector("#newUserName"),
@@ -146,12 +149,14 @@ function setLoading(flag) {
 async function loadOverview() {
   const data = await apiRequest("/api/admin/overview");
   state.overview = data;
+  state.alerts = Array.isArray(data.alerts) ? data.alerts : [];
 
   refs.kpiTotal.textContent = String(data.total || 0);
   refs.kpiPendiente.textContent = String(data.pendiente || 0);
   refs.kpiProceso.textContent = String(data.en_proceso || 0);
   refs.kpiNoAprobado.textContent = String(data.no_aprobado || 0);
   refs.kpiCompletado.textContent = String(data.completado || 0);
+  renderAlerts();
 }
 
 async function loadUsers() {
@@ -175,10 +180,10 @@ function renderUsers() {
     .map((row) => {
       const scoreText =
         row.last_quiz_score == null ? "-" : `${row.last_quiz_score}/${QUIZ_TOTAL_QUESTIONS}`;
-      const folioText = row.certificate_folio || "-";
+      const folioText = row.recognition_folio || "-";
       const code = row.codigo_interno || "-";
       const area = row.area || "-";
-      const certBtnDisabled = row.certificate_id ? "" : "disabled";
+      const recognitionBtnDisabled = row.recognition_id ? "" : "disabled";
 
       return `
         <tr>
@@ -191,7 +196,7 @@ function renderUsers() {
           <td>${escapeHtml(folioText)}</td>
           <td>
             <div class="actions">
-              <button class="small-btn" data-action="download-one" data-cert-id="${row.certificate_id || ""}" ${certBtnDisabled}>
+              <button class="small-btn" data-action="download-one" data-recognition-id="${row.recognition_id || ""}" ${recognitionBtnDisabled}>
                 Descargar
               </button>
             </div>
@@ -203,11 +208,40 @@ function renderUsers() {
 
   refs.usersTableBody.querySelectorAll("[data-action='download-one']").forEach((button) => {
     button.addEventListener("click", async () => {
-      const certId = button.getAttribute("data-cert-id");
-      if (!certId) return;
-      await downloadOne(certId, button);
+      const recognitionId = button.getAttribute("data-recognition-id");
+      if (!recognitionId) return;
+      await downloadOne(recognitionId, button);
     });
   });
+}
+
+function renderAlerts() {
+  const alerts = state.alerts || [];
+  refs.alertsSummary.textContent = alerts.length
+    ? `Alertas activas: ${alerts.length}`
+    : "Sin alertas activas por el momento.";
+
+  if (!alerts.length) {
+    refs.alertsList.innerHTML = `<div class="alert-item alert-ok">Sin registros críticos en este momento.</div>`;
+    return;
+  }
+
+  refs.alertsList.innerHTML = alerts
+    .map((alert) => {
+      const updated = alert.updated_at ? new Date(alert.updated_at).toLocaleString("es-MX") : "-";
+      const code = alert.codigo_interno ? ` · ${escapeHtml(alert.codigo_interno)}` : "";
+      const attemptCount = Number(alert.attempt_count || 0);
+      const attemptsText = attemptCount > 0 ? ` · Intentos: ${attemptCount}` : "";
+      const severityClass = alert.severity === "high" ? "alert-high" : "alert-medium";
+      return `
+        <article class="alert-item ${severityClass}">
+          <p class="alert-title">${escapeHtml(alert.type)} · ${escapeHtml(alert.nombre || "Sin nombre")}${code}</p>
+          <p>${escapeHtml(alert.message || "-")}${attemptsText}</p>
+          <p class="alert-date">Última actualización: ${escapeHtml(updated)}</p>
+        </article>
+      `;
+    })
+    .join("");
 }
 
 async function createUser() {
@@ -217,6 +251,16 @@ async function createUser() {
 
   if (!nombre) {
     setAdminMessage("Captura el nombre del usuario.");
+    return;
+  }
+
+  if (!codigoInterno) {
+    setAdminMessage("Captura el número de empleado.");
+    return;
+  }
+
+  if (!/^[0-9]+$/.test(codigoInterno)) {
+    setAdminMessage("El número de empleado debe contener solo dígitos.");
     return;
   }
 
@@ -240,7 +284,7 @@ async function createUser() {
   }
 }
 
-async function downloadOne(certificateId, triggerButton) {
+async function downloadOne(recognitionId, triggerButton) {
   const originalText = triggerButton ? triggerButton.textContent : "Descargar";
   let pendingWindow = null;
 
@@ -257,7 +301,7 @@ async function downloadOne(certificateId, triggerButton) {
 
   try {
     setAdminMessage("Generando enlace de descarga...");
-    const data = await apiRequest(`/api/certificates/${encodeURIComponent(certificateId)}/download`);
+    const data = await apiRequest(`/api/recognitions/${encodeURIComponent(recognitionId)}/download`);
     if (!data.download_url) {
       throw new Error("No se recibió URL de descarga.");
     }
@@ -273,7 +317,7 @@ async function downloadOne(certificateId, triggerButton) {
     if (pendingWindow && !pendingWindow.closed) {
       pendingWindow.close();
     }
-    setAdminMessage(`Error al descargar certificado: ${err.message}`);
+    setAdminMessage(`Error al descargar reconocimiento: ${err.message}`);
   } finally {
     if (triggerButton) {
       triggerButton.disabled = false;
@@ -288,14 +332,14 @@ async function downloadZip() {
     refs.downloadZipBtn.textContent = "Abriendo descarga...";
     setAdminMessage("Se abrirá una pestaña para preparar el ZIP.");
 
-    const zipUrl = buildApiUrl("/api/certificates/export-zip");
+    const zipUrl = buildApiUrl("/api/recognitions/export-zip");
     openDownloadUrl(zipUrl);
   } catch (err) {
     setAdminMessage(`Error ZIP: ${err.message}`);
   } finally {
     window.setTimeout(() => {
       refs.downloadZipBtn.disabled = false;
-      refs.downloadZipBtn.textContent = "Descargar ZIP de completados";
+      refs.downloadZipBtn.textContent = "Descargar ZIP de reconocimientos completados";
     }, 900);
   }
 }

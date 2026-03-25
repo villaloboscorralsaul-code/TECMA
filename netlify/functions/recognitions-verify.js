@@ -16,30 +16,30 @@ exports.handler = async (event) => {
     const supabase = getSupabaseAdmin();
 
     const query = supabase
-      .from("certificados")
+      .from("reconocimientos")
       .select("id,usuario_id,folio,issued_at,verify_token,score")
       .limit(1);
 
-    const { data: certRows, error: certError } = token
+    const { data: recognitionRows, error: recognitionError } = token
       ? await query.eq("verify_token", token)
       : await query.eq("folio", folio);
 
-    if (certError) {
-      return json(500, { error: certError.message });
+    if (recognitionError) {
+      return json(500, { error: recognitionError.message });
     }
 
-    const cert = Array.isArray(certRows) ? certRows[0] : null;
-    if (!cert) {
+    const recognition = Array.isArray(recognitionRows) ? recognitionRows[0] : null;
+    if (!recognition) {
       return json(404, {
         valid: false,
-        error: "Certificate not found",
+        error: "Recognition not found",
       });
     }
 
     const { data: user, error: userError } = await supabase
       .from("usuarios")
       .select("id,nombre,codigo_interno,area")
-      .eq("id", cert.usuario_id)
+      .eq("id", recognition.usuario_id)
       .maybeSingle();
 
     if (userError) {
@@ -48,11 +48,11 @@ exports.handler = async (event) => {
 
     return json(200, {
       valid: true,
-      certificate: {
-        id: cert.id,
-        folio: cert.folio,
-        issued_at: cert.issued_at,
-        score: cert.score,
+      recognition: {
+        id: recognition.id,
+        folio: recognition.folio,
+        issued_at: recognition.issued_at,
+        score: recognition.score,
       },
       user: user
         ? {

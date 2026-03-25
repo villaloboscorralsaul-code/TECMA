@@ -2,6 +2,9 @@ const PASSING_SCORE = 4;
 const TECMA_LOGO_PATH = "/assets/tecma-logo.png";
 const OFFICIAL_ENTRY_QR_URL = "https://celebrated-profiterole-50371a.netlify.app/";
 const PHOTO_MAX_EDGE = 960;
+const RECOGNITION_PREFIX = "TECMA-RECON";
+const RECOGNITION_YEAR = "2026";
+const AUTOCOMPLETE_MAX_RESULTS = 8;
 
 const quizQuestions = [
   {
@@ -66,15 +69,15 @@ const quizQuestions = [
   },
   {
     id: "q6",
-    prompt: "¿A quiénes se les pide cumplir con estas reglas?",
+    prompt: "¿A quién aplica de forma directa la difusión de esta Política Social?",
     options: [
       "Solo a los empleados nuevos.",
-      "A la propia empresa y sus empleados, así como también a sus socios comerciales.",
-      "Únicamente a los clientes que compran poco.",
+      "A todo el personal y liderazgo interno de TECMA.",
+      "A campañas comerciales de proveedores externos.",
     ],
     answer: 1,
-    correctHint: "Exacto: la política aplica a toda la cadena de valor de TTS.",
-    wrongHint: "No aplica a un grupo pequeño, sino a empresa, personal y socios.",
+    correctHint: "Exacto: esta difusión está dirigida al personal interno de TECMA.",
+    wrongHint: "El enfoque principal es interno, no de promoción comercial externa.",
   },
   {
     id: "q7",
@@ -102,6 +105,8 @@ const state = {
   rosterLoaded: false,
   roster: [],
   rosterMap: new Map(),
+  autocompleteResults: [],
+  autocompleteActiveIndex: -1,
   entryBusy: false,
   alreadyCompleted: false,
 
@@ -117,9 +122,9 @@ const state = {
   acceptedAt: null,
 
   folio: "",
-  certificateDownloadUrl: "",
-  certificateVerifyUrl: "",
-  certificateIssuedAt: "",
+  recognitionDownloadUrl: "",
+  recognitionVerifyUrl: "",
+  recognitionIssuedAt: "",
 
   tecmaLogoImage: null,
   tecmaLogoReady: false,
@@ -128,7 +133,8 @@ const state = {
 const refs = {
   entryScreen: document.querySelector("#entryScreen"),
   programScreen: document.querySelector("#programScreen"),
-  employeeSelect: document.querySelector("#employeeSelect"),
+  employeeSearch: document.querySelector("#employeeSearch"),
+  employeeAutocomplete: document.querySelector("#employeeAutocomplete"),
   reloadRosterBtn: document.querySelector("#reloadRosterBtn"),
   rosterStatus: document.querySelector("#rosterStatus"),
   selectedUserMeta: document.querySelector("#selectedUserMeta"),
@@ -164,16 +170,16 @@ const refs = {
   resultSummary: document.querySelector("#resultSummary"),
   resultStatus: document.querySelector("#resultStatus"),
   retryQuizBtn: document.querySelector("#retryQuizBtn"),
-  generateCertBtn: document.querySelector("#generateCertBtn"),
+  generateRecognitionBtn: document.querySelector("#generateRecognitionBtn"),
 
-  certName: document.querySelector("#certName"),
-  certPhoto: document.querySelector("#certPhoto"),
-  certPhotoFallback: document.querySelector("#certPhotoFallback"),
-  certDate: document.querySelector("#certDate"),
-  certFolio: document.querySelector("#certFolio"),
-  certQr: document.querySelector("#certQr"),
+  recognitionName: document.querySelector("#recognitionName"),
+  recognitionPhoto: document.querySelector("#recognitionPhoto"),
+  recognitionPhotoFallback: document.querySelector("#recognitionPhotoFallback"),
+  recognitionDate: document.querySelector("#recognitionDate"),
+  recognitionFolio: document.querySelector("#recognitionFolio"),
+  recognitionQr: document.querySelector("#recognitionQr"),
   verifyUrl: document.querySelector("#verifyUrl"),
-  printCertBtn: document.querySelector("#printCertBtn"),
+  printRecognitionBtn: document.querySelector("#printRecognitionBtn"),
   newSessionBtn: document.querySelector("#newSessionBtn"),
 
   year: document.querySelector("#year"),
@@ -190,7 +196,10 @@ function init() {
 }
 
 function bindEvents() {
-  refs.employeeSelect.addEventListener("change", handleEmployeeSelection);
+  refs.employeeSearch.addEventListener("input", handleEmployeeSearchInput);
+  refs.employeeSearch.addEventListener("focus", handleEmployeeSearchFocus);
+  refs.employeeSearch.addEventListener("blur", handleEmployeeSearchBlur);
+  refs.employeeSearch.addEventListener("keydown", handleEmployeeSearchKeydown);
   refs.reloadRosterBtn.addEventListener("click", () => {
     void loadRoster(true);
   });
@@ -247,11 +256,11 @@ function bindEvents() {
     setActiveStep("quizStep");
   });
 
-  refs.generateCertBtn.addEventListener("click", () => {
-    void handleGenerateCertificate();
+  refs.generateRecognitionBtn.addEventListener("click", () => {
+    void handleGenerateRecognition();
   });
 
-  refs.printCertBtn.addEventListener("click", handleDownloadCertificate);
+  refs.printRecognitionBtn.addEventListener("click", handleDownloadRecognition);
 
   refs.newSessionBtn.addEventListener("click", () => {
     window.location.href = window.location.pathname;
@@ -264,7 +273,7 @@ async function loadRoster(force = false) {
   }
 
   state.rosterLoading = true;
-  refs.employeeSelect.disabled = true;
+  refs.employeeSearch.disabled = true;
   refs.reloadRosterBtn.disabled = true;
   refs.rosterStatus.textContent = "Consultando lista de usuarios...";
 
@@ -290,12 +299,15 @@ async function loadRoster(force = false) {
     }
   } catch (error) {
     state.rosterLoaded = false;
-    refs.employeeSelect.innerHTML = '<option value="">No se pudo cargar el padrón</option>';
+    refs.employeeSearch.value = "";
+    refs.employeeSearch.placeholder = "No se pudo cargar el padrón";
+    refs.employeeAutocomplete.innerHTML = "";
+    refs.employeeAutocomplete.classList.add("hidden");
     refs.rosterStatus.textContent = `Error al cargar padrón: ${error.message}`;
     setEntryMessage("No fue posible cargar el padrón de usuarios.", "error");
   } finally {
     state.rosterLoading = false;
-    refs.employeeSelect.disabled = false;
+    refs.employeeSearch.disabled = false;
     refs.reloadRosterBtn.disabled = false;
     refs.reloadRosterBtn.textContent = "Actualizar padrón";
     updateStartButtonState();
@@ -303,29 +315,184 @@ async function loadRoster(force = false) {
 }
 
 function renderRosterSelect(users) {
-  const previousValue = refs.employeeSelect.value;
-
-  const options = [
-    '<option value="">Selecciona tu nombre</option>',
-    ...users.map((user) => {
-      const statusLabel = user.estado ? ` (${user.estado})` : "";
-      return `<option value="${escapeHtml(user.id)}">${escapeHtml(user.nombre)}${escapeHtml(statusLabel)}</option>`;
-    }),
-  ];
-
-  refs.employeeSelect.innerHTML = options.join("");
-
-  if (previousValue && state.rosterMap.has(previousValue)) {
-    refs.employeeSelect.value = previousValue;
-    handleEmployeeSelection();
-  } else {
-    refs.employeeSelect.value = "";
+  if (!Array.isArray(users) || users.length === 0) {
     clearSelectedUserState();
+    refs.employeeSearch.placeholder = "No hay usuarios disponibles";
+    refs.employeeAutocomplete.classList.add("hidden");
+    return;
+  }
+
+  if (state.userId && state.rosterMap.has(state.userId)) {
+    setSelectedEmployeeById(state.userId);
+  } else {
+    clearSelectedUserState();
+  }
+
+  refs.employeeSearch.placeholder = "Escribe tu nombre o número de empleado";
+  renderEmployeeAutocomplete();
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function findRosterMatches(query) {
+  const normalizedQuery = normalizeText(query);
+  const base = Array.isArray(state.roster) ? state.roster : [];
+
+  if (!normalizedQuery) {
+    return base.slice(0, AUTOCOMPLETE_MAX_RESULTS);
+  }
+
+  return base
+    .filter((user) => {
+      const normalizedName = normalizeText(user.nombre);
+      const normalizedCode = normalizeText(user.codigo_interno || "");
+      return normalizedName.includes(normalizedQuery) || normalizedCode.includes(normalizedQuery);
+    })
+    .slice(0, AUTOCOMPLETE_MAX_RESULTS);
+}
+
+function renderEmployeeAutocomplete(forceVisible = false) {
+  const query = refs.employeeSearch.value || "";
+  const matches = findRosterMatches(query);
+  state.autocompleteResults = matches;
+  state.autocompleteActiveIndex = matches.length === 0 ? -1 : Math.max(0, state.autocompleteActiveIndex);
+  refs.employeeAutocomplete.innerHTML = "";
+
+  if (matches.length === 0) {
+    if (!query.trim()) {
+      refs.employeeAutocomplete.classList.add("hidden");
+      return;
+    }
+
+    const empty = document.createElement("div");
+    empty.className = "autocomplete-empty";
+    empty.textContent = "Sin coincidencias en el padrón.";
+    refs.employeeAutocomplete.appendChild(empty);
+    refs.employeeAutocomplete.classList.remove("hidden");
+    return;
+  }
+
+  matches.forEach((user, index) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "autocomplete-option";
+    option.setAttribute("role", "option");
+    option.dataset.userId = user.id;
+
+    const codeLabel = user.codigo_interno ? `(${user.codigo_interno})` : "";
+    const statusLabel = user.estado ? user.estado : "PENDIENTE";
+
+    option.innerHTML = `
+      <span class="name">${escapeHtml(user.nombre)} ${escapeHtml(codeLabel)}</span>
+      <span class="meta">${escapeHtml(statusLabel)}</span>
+    `;
+
+    if (index === state.autocompleteActiveIndex) {
+      option.classList.add("active");
+    }
+
+    option.addEventListener("mouseenter", () => {
+      state.autocompleteActiveIndex = index;
+      syncAutocompleteActiveOption();
+    });
+
+    option.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      setSelectedEmployeeById(user.id);
+      refs.employeeAutocomplete.classList.add("hidden");
+    });
+    option.addEventListener("click", () => {
+      setSelectedEmployeeById(user.id);
+      refs.employeeAutocomplete.classList.add("hidden");
+    });
+
+    refs.employeeAutocomplete.appendChild(option);
+  });
+
+  if (forceVisible || query.trim()) {
+    refs.employeeAutocomplete.classList.remove("hidden");
+  } else {
+    refs.employeeAutocomplete.classList.add("hidden");
   }
 }
 
-function handleEmployeeSelection() {
-  const selectedId = refs.employeeSelect.value;
+function syncAutocompleteActiveOption() {
+  const options = refs.employeeAutocomplete.querySelectorAll(".autocomplete-option");
+  options.forEach((node, index) => {
+    node.classList.toggle("active", index === state.autocompleteActiveIndex);
+  });
+}
+
+function handleEmployeeSearchInput() {
+  const typedName = refs.employeeSearch.value.trim();
+  if (state.userId && normalizeText(typedName) !== normalizeText(state.employeeName)) {
+    clearSelectedUserState(true);
+  }
+
+  state.autocompleteActiveIndex = 0;
+  renderEmployeeAutocomplete(true);
+  updateStartButtonState();
+}
+
+function handleEmployeeSearchFocus() {
+  state.autocompleteActiveIndex = 0;
+  renderEmployeeAutocomplete(true);
+}
+
+function handleEmployeeSearchBlur() {
+  window.setTimeout(() => {
+    refs.employeeAutocomplete.classList.add("hidden");
+  }, 120);
+}
+
+function handleEmployeeSearchKeydown(event) {
+  if (refs.employeeAutocomplete.classList.contains("hidden")) {
+    return;
+  }
+
+  const lastIndex = state.autocompleteResults.length - 1;
+  if (lastIndex < 0) {
+    return;
+  }
+
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    state.autocompleteActiveIndex =
+      state.autocompleteActiveIndex >= lastIndex ? 0 : state.autocompleteActiveIndex + 1;
+    syncAutocompleteActiveOption();
+    return;
+  }
+
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    state.autocompleteActiveIndex =
+      state.autocompleteActiveIndex <= 0 ? lastIndex : state.autocompleteActiveIndex - 1;
+    syncAutocompleteActiveOption();
+    return;
+  }
+
+  if (event.key === "Escape") {
+    refs.employeeAutocomplete.classList.add("hidden");
+    return;
+  }
+
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const selected = state.autocompleteResults[state.autocompleteActiveIndex];
+    if (selected) {
+      setSelectedEmployeeById(selected.id);
+      refs.employeeAutocomplete.classList.add("hidden");
+    }
+  }
+}
+
+function setSelectedEmployeeById(selectedId) {
 
   if (!selectedId || !state.rosterMap.has(selectedId)) {
     clearSelectedUserState();
@@ -339,6 +506,7 @@ function handleEmployeeSelection() {
   state.employeeCode = selectedUser.codigo_interno || "";
   state.employeeArea = selectedUser.area || "";
   state.employeeStatus = selectedUser.estado || "PENDIENTE";
+  state.alreadyCompleted = state.employeeStatus === "COMPLETADO";
 
   const parts = [
     state.employeeCode ? `Código: ${state.employeeCode}` : null,
@@ -348,19 +516,28 @@ function handleEmployeeSelection() {
 
   refs.selectedUserMeta.textContent = parts.join(" | ");
   refs.selectedUserMeta.classList.remove("hidden");
+  refs.employeeSearch.value = state.employeeName;
+  refs.employeeAutocomplete.classList.add("hidden");
   setEntryMessage("");
   updateStartButtonState();
 }
 
-function clearSelectedUserState() {
+function clearSelectedUserState(keepTypedValue = false) {
   state.userId = "";
   state.employeeName = "Empleado TECMA";
   state.employeeCode = "";
   state.employeeArea = "";
   state.employeeStatus = "PENDIENTE";
+  state.alreadyCompleted = false;
+  state.autocompleteResults = [];
+  state.autocompleteActiveIndex = -1;
 
   refs.selectedUserMeta.textContent = "";
   refs.selectedUserMeta.classList.add("hidden");
+
+  if (!keepTypedValue) {
+    refs.employeeSearch.value = "";
+  }
 }
 
 function setEntryMessage(text, tone = "") {
@@ -382,14 +559,14 @@ async function handleSessionStart() {
   }
 
   if (!state.userId) {
-    setEntryMessage("Selecciona tu nombre en el padrón para continuar.", "error");
+    setEntryMessage("Selecciona tu nombre en el buscador para continuar.", "error");
     return;
   }
 
   if (!state.employeePhotoDataUrl) {
     refs.photoStatus.textContent = "Captura la fotografía antes de continuar.";
     refs.photoStatus.classList.remove("ok");
-    setEntryMessage("La fotografía es obligatoria para emitir certificado.", "error");
+    setEntryMessage("La fotografía es obligatoria para emitir reconocimiento.", "error");
     return;
   }
 
@@ -416,6 +593,18 @@ async function handleSessionStart() {
     setEntryMessage("Sesión iniciada correctamente.", "success");
     beginProgram();
   } catch (error) {
+    if (String(error.message || "").toLowerCase().includes("ya complet")) {
+      state.alreadyCompleted = true;
+      state.employeeStatus = "COMPLETADO";
+      refs.selectedUserMeta.textContent = [
+        state.employeeCode ? `Código: ${state.employeeCode}` : null,
+        state.employeeArea ? `Área: ${state.employeeArea}` : null,
+        "Estado actual: COMPLETADO",
+      ]
+        .filter(Boolean)
+        .join(" | ");
+      refs.selectedUserMeta.classList.remove("hidden");
+    }
     setEntryMessage(`No fue posible iniciar: ${error.message}`, "error");
   } finally {
     state.entryBusy = false;
@@ -431,8 +620,7 @@ function beginProgram() {
   syncEmployeePhotoInUI();
 
   if (state.alreadyCompleted) {
-    refs.welcomeStatus.textContent =
-      "Este colaborador ya cuenta con un certificado emitido. Puede repetir el módulo o avanzar para recuperar evidencia.";
+    refs.welcomeStatus.textContent = "Este colaborador ya cuenta con un reconocimiento emitido.";
     refs.welcomeStatus.classList.remove("hidden");
   } else {
     refs.welcomeStatus.textContent = "";
@@ -715,8 +903,8 @@ function submitCurrentAnswer() {
 
   refs.quizFeedback.className = `feedback visible ${isCorrect ? "correct" : "incorrect"}`;
   refs.quizFeedback.textContent = isCorrect
-    ? `Correcto (hoja de maple): ${question.correctHint}`
-    : `Incorrecto (águila): ${question.wrongHint}`;
+    ? `Correcto: ${question.correctHint}`
+    : `Incorrecto: ${question.wrongHint}`;
 
   refs.submitAnswerBtn.classList.add("hidden");
   refs.nextQuestionBtn.classList.remove("hidden");
@@ -733,7 +921,7 @@ async function showResult() {
     `Obtuviste ${state.score} de ${quizQuestions.length} respuestas correctas. Registrando resultado...`;
   refs.resultStatus.classList.remove("pass", "fail");
   refs.resultStatus.textContent = "Procesando...";
-  refs.generateCertBtn.classList.add("hidden");
+  refs.generateRecognitionBtn.classList.add("hidden");
 
   try {
     const payload = await apiRequest("/api/quiz/submit", {
@@ -755,7 +943,7 @@ async function showResult() {
       refs.resultStatus.classList.add("pass");
       refs.resultStatus.textContent =
         `Aprobado: cumples el criterio mínimo (${passingScore}/${quizQuestions.length}).`;
-      refs.generateCertBtn.classList.remove("hidden");
+      refs.generateRecognitionBtn.classList.remove("hidden");
       return;
     }
 
@@ -768,20 +956,20 @@ async function showResult() {
   }
 }
 
-async function handleGenerateCertificate() {
+async function handleGenerateRecognition() {
   if (!state.userId) {
     refs.resultStatus.classList.remove("pass");
     refs.resultStatus.classList.add("fail");
-    refs.resultStatus.textContent = "No hay usuario activo para generar certificado.";
+    refs.resultStatus.textContent = "No hay usuario activo para generar reconocimiento.";
     return;
   }
 
-  const previousText = refs.generateCertBtn.textContent;
-  refs.generateCertBtn.disabled = true;
-  refs.generateCertBtn.textContent = "Generando certificado...";
+  const previousText = refs.generateRecognitionBtn.textContent;
+  refs.generateRecognitionBtn.disabled = true;
+  refs.generateRecognitionBtn.textContent = "Generando reconocimiento...";
 
   try {
-    const payload = await apiRequest("/api/certificates/generate", {
+    const payload = await apiRequest("/api/recognitions/generate", {
       method: "POST",
       body: {
         user_id: state.userId,
@@ -789,76 +977,76 @@ async function handleGenerateCertificate() {
       },
     });
 
-    if (!payload.certificate) {
-      throw new Error("Respuesta inválida al generar certificado");
+    if (!payload.recognition) {
+      throw new Error("Respuesta inválida al generar reconocimiento");
     }
 
-    renderCertificate(payload.certificate);
-    setActiveStep("certificateStep");
+    renderRecognition(payload.recognition);
+    setActiveStep("recognitionStep");
   } catch (error) {
     refs.resultStatus.classList.remove("pass");
     refs.resultStatus.classList.add("fail");
-    refs.resultStatus.textContent = `No fue posible generar el certificado: ${error.message}`;
+    refs.resultStatus.textContent = `No fue posible generar el reconocimiento: ${error.message}`;
   } finally {
-    refs.generateCertBtn.disabled = false;
-    refs.generateCertBtn.textContent = previousText;
+    refs.generateRecognitionBtn.disabled = false;
+    refs.generateRecognitionBtn.textContent = previousText;
   }
 }
 
-function renderCertificate(certificate) {
-  const issuedAt = certificate.issued_at ? new Date(certificate.issued_at) : new Date();
+function renderRecognition(recognition) {
+  const issuedAt = recognition.issued_at ? new Date(recognition.issued_at) : new Date();
   const longDate = new Intl.DateTimeFormat("es-MX", {
     day: "2-digit",
     month: "long",
     year: "numeric",
   }).format(issuedAt);
 
-  state.folio = String(certificate.folio || "").trim() || createFallbackFolio(issuedAt);
-  state.certificateDownloadUrl = String(certificate.download_url || "").trim();
-  state.certificateVerifyUrl = String(certificate.verify_url || "").trim();
-  state.certificateIssuedAt = issuedAt.toISOString();
+  state.folio = String(recognition.folio || "").trim() || createFallbackRecognitionFolio(issuedAt);
+  state.recognitionDownloadUrl = String(recognition.download_url || "").trim();
+  state.recognitionVerifyUrl = String(recognition.verify_url || "").trim();
+  state.recognitionIssuedAt = issuedAt.toISOString();
 
-  refs.certName.textContent = state.employeeName;
+  refs.recognitionName.textContent = state.employeeName;
 
   if (state.employeePhotoDataUrl) {
-    refs.certPhoto.src = state.employeePhotoDataUrl;
-    refs.certPhoto.classList.remove("hidden");
-    refs.certPhotoFallback.classList.add("hidden");
+    refs.recognitionPhoto.src = state.employeePhotoDataUrl;
+    refs.recognitionPhoto.classList.remove("hidden");
+    refs.recognitionPhotoFallback.classList.add("hidden");
   } else {
-    refs.certPhoto.src = "";
-    refs.certPhoto.classList.add("hidden");
-    refs.certPhotoFallback.classList.remove("hidden");
+    refs.recognitionPhoto.src = "";
+    refs.recognitionPhoto.classList.add("hidden");
+    refs.recognitionPhotoFallback.classList.remove("hidden");
   }
 
-  refs.certDate.textContent = longDate;
-  refs.certFolio.textContent = state.folio;
+  refs.recognitionDate.textContent = longDate;
+  refs.recognitionFolio.textContent = state.folio;
 
-  const verificationValue = state.certificateVerifyUrl || `Folio: ${state.folio}`;
-  refs.certQr.dataset.payload = verificationValue;
-  drawBrandQr(refs.certQr, verificationValue);
+  const verificationValue = state.recognitionVerifyUrl || `Folio: ${state.folio}`;
+  refs.recognitionQr.dataset.payload = verificationValue;
+  drawBrandQr(refs.recognitionQr, verificationValue);
 
-  if (state.certificateVerifyUrl) {
-    refs.verifyUrl.innerHTML = `<a href="${escapeHtml(state.certificateVerifyUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
-      state.certificateVerifyUrl
+  if (state.recognitionVerifyUrl) {
+    refs.verifyUrl.innerHTML = `<a href="${escapeHtml(state.recognitionVerifyUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(
+      state.recognitionVerifyUrl
     )}</a>`;
   } else {
     refs.verifyUrl.textContent = `Código de verificación: ${state.folio}`;
   }
 
-  cacheCertificateRecord();
+  cacheRecognitionRecord();
 }
 
-function cacheCertificateRecord() {
+function cacheRecognitionRecord() {
   if (!state.folio) {
     return;
   }
 
   try {
-    const key = `tecma-cert:${state.folio}`;
+    const key = `tecma-recon:${state.folio}`;
     const payload = {
       folio: state.folio,
       employeeName: state.employeeName,
-      issuedAt: state.certificateIssuedAt,
+      issuedAt: state.recognitionIssuedAt,
       score: state.score,
       policyAcceptedAt: state.acceptedAt ? state.acceptedAt.toISOString() : null,
       userId: state.userId,
@@ -871,23 +1059,34 @@ function cacheCertificateRecord() {
   }
 }
 
-function handleDownloadCertificate() {
-  if (state.certificateDownloadUrl) {
-    window.open(state.certificateDownloadUrl, "_blank", "noopener,noreferrer");
+function handleDownloadRecognition() {
+  if (state.recognitionDownloadUrl) {
+    window.open(state.recognitionDownloadUrl, "_blank", "noopener,noreferrer");
     return;
   }
 
   window.print();
 }
 
-function createFallbackFolio(dateObj) {
-  const year = dateObj.getFullYear();
-  const serial = Math.floor(100000 + Math.random() * 900000);
-  return `TECMA-CERT-${year}-${serial}`;
+function createFallbackRecognitionFolio(dateObj) {
+  void dateObj;
+  const year = RECOGNITION_YEAR;
+  const employeeNumber = String(state.employeeCode || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/[^0-9]/g, "")
+    .slice(0, 20);
+  const safeEmployeeNumber = employeeNumber || "000000";
+  return `${RECOGNITION_PREFIX}-${year}-${safeEmployeeNumber}`;
 }
 
 function updateStartButtonState() {
-  const ready = Boolean(state.userId) && Boolean(state.employeePhotoDataUrl) && !state.entryBusy;
+  const blockedByCompletion = state.employeeStatus === "COMPLETADO" || state.alreadyCompleted;
+  const ready =
+    Boolean(state.userId) &&
+    Boolean(state.employeePhotoDataUrl) &&
+    !state.entryBusy &&
+    !blockedByCompletion;
   refs.scanBtn.disabled = !ready;
 }
 
@@ -993,7 +1192,7 @@ function preloadBrandAssets() {
 }
 
 function redrawQrCanvases() {
-  [refs.entryQr, refs.certQr].forEach((canvas) => {
+  [refs.entryQr, refs.recognitionQr].forEach((canvas) => {
     if (!canvas || !canvas.dataset.payload) {
       return;
     }
@@ -1002,7 +1201,7 @@ function redrawQrCanvases() {
 }
 
 function drawBrandQr(canvas, payload) {
-  const decorate = canvas.id === "certQr";
+  const decorate = canvas.id === "recognitionQr";
   const darkColor = decorate ? "#1a2b4c" : "#000000";
 
   if (

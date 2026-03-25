@@ -25,12 +25,25 @@ exports.handler = async (event) => {
 
     const { data: progress, error: progressError } = await supabase
       .from("progreso_test")
-      .select("estado")
+      .select("estado,recognition_id")
       .eq("usuario_id", userId)
       .maybeSingle();
 
     if (progressError) {
       return json(500, { error: progressError.message });
+    }
+
+    if (progress?.estado === STATUS.COMPLETADO || progress?.recognition_id) {
+      await logAudit(supabase, {
+        usuarioId: userId,
+        actor: "SYSTEM",
+        action: "POLICY_ACCEPT_BLOCKED_COMPLETED",
+        metadata: {},
+      });
+      return json(403, {
+        blocked: true,
+        error: "El flujo ya fue completado y no se puede volver a registrar.",
+      });
     }
 
     if (!progress) {

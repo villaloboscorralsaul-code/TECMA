@@ -32,7 +32,7 @@ exports.handler = async (event) => {
         codigo_interno: user.codigo_interno || null,
         area: user.area || null,
         estado: progress?.estado || STATUS.PENDIENTE,
-        has_certificate: Boolean(progress?.certificate_id),
+        has_recognition: Boolean(progress?.recognition_id),
       };
     });
 

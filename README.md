@@ -1,11 +1,11 @@
-# TECMA Politica Social (QR + Admin + Certificados)
+# TECMA Politica Social (QR + Admin + Reconocimientos)
 
 Implementacion completa del flujo TECMA en Netlify + Supabase con:
 
 1. Flujo de usuario desde QR general (`/`) con seleccion de nombre desde padron.
 2. Registro de estado por usuario: `PENDIENTE`, `EN_PROCESO`, `COMPLETADO`, `NO_APROBADO`.
-3. Quiz de 5 preguntas y criterio de aprobacion `4/5`.
-4. Generacion de certificado PDF con folio y URL de verificacion.
+3. Quiz de 7 preguntas y criterio de aprobacion `4/7`.
+4. Generacion de reconocimiento PDF con folio y URL de verificacion.
 5. Panel admin (`/admin?key=...`) con KPIs, carga manual, descarga individual y ZIP masivo.
 
 ## Estructura
@@ -27,7 +27,7 @@ Tablas incluidas:
 - `usuarios`
 - `progreso_test`
 - `intentos_quiz`
-- `certificados`
+- `reconocimientos`
 - `eventos_auditoria`
 
 ### 2) Variables de entorno (Netlify o local)
@@ -37,7 +37,7 @@ Copia `.env.example` y define:
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `ADMIN_ACCESS_KEY`
-- `CERTIFICATES_BUCKET` (opcional, default: `certificates`)
+- `RECOGNITIONS_BUCKET` (opcional, default: `recognitions`)
 - `PUBLIC_SITE_URL` (ej. `https://tu-sitio.netlify.app`)
 
 ### 3) Dependencias
@@ -70,10 +70,10 @@ node --check admin.js
 - `POST /api/session/start`
 - `POST /api/policy/accept`
 - `POST /api/quiz/submit`
-- `POST /api/certificates/generate`
-- `GET /api/certificates/:id/download` (admin key requerida)
-- `POST /api/certificates/export-zip` (admin key requerida)
-- `GET /api/certificates/verify?token=...` o `?folio=...`
+- `POST /api/recognitions/generate`
+- `GET /api/recognitions/:id/download` (admin key requerida)
+- `POST /api/recognitions/export-zip` (admin key requerida)
+- `GET /api/recognitions/verify?token=...` o `?folio=...`
 
 ## Flujo Funcional
 
@@ -83,9 +83,9 @@ node --check admin.js
 4. App llama `POST /api/session/start` y pasa a `EN_PROCESO`.
 5. Tras lectura y aceptacion, app llama `POST /api/policy/accept`.
 6. Al terminar quiz, app llama `POST /api/quiz/submit`:
-   - `>=4`: mantiene `EN_PROCESO` hasta generar certificado.
+   - `>=4`: mantiene `EN_PROCESO` hasta generar reconocimiento.
    - `<4`: cambia a `NO_APROBADO`.
-7. Si aprueba, app llama `POST /api/certificates/generate`:
+7. Si aprueba, app llama `POST /api/recognitions/generate`:
    - crea/reutiliza PDF
    - asigna folio y verify token
    - cambia a `COMPLETADO`.
@@ -111,6 +111,6 @@ Si logos/imagenes no cargan en produccion:
 1. El total admin sale del conteo real de `usuarios`.
 2. Estados visibles y filtrables por dashboard.
 3. Cambio de estado en el ciclo real de usuario.
-4. Generacion y descarga individual de certificado.
+4. Generacion y descarga individual de reconocimiento.
 5. Exportacion ZIP para aprobados/completados.
 6. Endpoint de verificacion por folio/token.

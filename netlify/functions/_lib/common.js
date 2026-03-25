@@ -10,7 +10,7 @@ const STATUS = {
 
 const PASSING_SCORE = 4;
 const QUIZ_TOTAL_QUESTIONS = 7;
-const CERT_BUCKET = process.env.CERTIFICATES_BUCKET || "certificates";
+const RECOGNITION_BUCKET = process.env.RECOGNITIONS_BUCKET || "recognitions";
 
 function json(statusCode, payload) {
   return {
@@ -105,10 +105,22 @@ function randomToken(size = 16) {
   return crypto.randomBytes(size).toString("hex");
 }
 
-function buildFolio(dateObj = new Date()) {
-  const yyyy = dateObj.getFullYear();
-  const serial = Math.floor(100000 + Math.random() * 900000);
-  return `TECMA-CERT-${yyyy}-${serial}`;
+function normalizeEmployeeNumber(employeeNumber) {
+  return String(employeeNumber || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/[^0-9]/g, "")
+    .slice(0, 20);
+}
+
+function buildRecognitionFolio(employeeNumber, year = "2026") {
+  const safeEmployeeNumber = normalizeEmployeeNumber(employeeNumber);
+  if (!safeEmployeeNumber) {
+    throw new Error("Employee number is required to generate folio");
+  }
+
+  const safeYear = String(year || "2026").trim() || "2026";
+  return `TECMA-RECON-${safeYear}-${safeEmployeeNumber}`;
 }
 
 function slugify(value) {
@@ -125,18 +137,18 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-async function ensureCertificatesBucket(supabase) {
+async function ensureRecognitionsBucket(supabase) {
   const { data, error } = await supabase.storage.listBuckets();
   if (error) {
     return;
   }
 
-  const exists = Array.isArray(data) && data.some((bucket) => bucket.name === CERT_BUCKET);
+  const exists = Array.isArray(data) && data.some((bucket) => bucket.name === RECOGNITION_BUCKET);
   if (exists) {
     return;
   }
 
-  await supabase.storage.createBucket(CERT_BUCKET, {
+  await supabase.storage.createBucket(RECOGNITION_BUCKET, {
     public: false,
     fileSizeLimit: "10MB",
   });
@@ -144,7 +156,7 @@ async function ensureCertificatesBucket(supabase) {
 
 async function createSignedDownloadUrl(supabase, filePath, expiresInSeconds = 60 * 60 * 24 * 7) {
   const { data, error } = await supabase.storage
-    .from(CERT_BUCKET)
+    .from(RECOGNITION_BUCKET)
     .createSignedUrl(filePath, expiresInSeconds);
 
   if (error || !data?.signedUrl) {
@@ -161,7 +173,7 @@ async function getProgressMap(supabase, userIds) {
 
   const { data, error } = await supabase
     .from("progreso_test")
-    .select("usuario_id,estado,started_at,policy_accepted_at,last_quiz_score,attempt_count,completed_at,certificate_id")
+    .select("usuario_id,estado,started_at,policy_accepted_at,last_quiz_score,attempt_count,completed_at,recognition_id")
     .in("usuario_id", userIds);
 
   if (error || !Array.isArray(data)) {
@@ -189,7 +201,7 @@ module.exports = {
   STATUS,
   PASSING_SCORE,
   QUIZ_TOTAL_QUESTIONS,
-  CERT_BUCKET,
+  RECOGNITION_BUCKET,
   json,
   parseBody,
   normalizeName,
@@ -198,10 +210,10 @@ module.exports = {
   getSupabaseAdmin,
   requireAdmin,
   randomToken,
-  buildFolio,
+  buildRecognitionFolio,
   slugify,
   nowIso,
-  ensureCertificatesBucket,
+  ensureRecognitionsBucket,
   createSignedDownloadUrl,
   getProgressMap,
   logAudit,

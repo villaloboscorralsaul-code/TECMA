@@ -1,7 +1,7 @@
 const JSZip = require("jszip");
 const {
   STATUS,
-  CERT_BUCKET,
+  RECOGNITION_BUCKET,
   json,
   getSupabaseAdmin,
   requireAdmin,
@@ -47,33 +47,33 @@ exports.handler = async (event) => {
 
     const userMap = new Map((users || []).map((row) => [row.id, row.nombre]));
 
-    const { data: certRows, error: certError } = await supabase
-      .from("certificados")
+    const { data: recognitionRows, error: recognitionError } = await supabase
+      .from("reconocimientos")
       .select("id,usuario_id,folio,file_path")
       .in("usuario_id", completedUserIds);
 
-    if (certError) {
-      return json(500, { error: certError.message });
+    if (recognitionError) {
+      return json(500, { error: recognitionError.message });
     }
 
-    if (!certRows || certRows.length === 0) {
-      return json(404, { error: "No certificates available to export" });
+    if (!recognitionRows || recognitionRows.length === 0) {
+      return json(404, { error: "No recognitions available to export" });
     }
 
     const zip = new JSZip();
 
-    for (const cert of certRows) {
+    for (const recognition of recognitionRows) {
       const { data: fileData, error: fileError } = await supabase.storage
-        .from(CERT_BUCKET)
-        .download(cert.file_path);
+        .from(RECOGNITION_BUCKET)
+        .download(recognition.file_path);
 
       if (fileError || !fileData) {
         continue;
       }
 
-      const employeeName = userMap.get(cert.usuario_id) || "usuario";
+      const employeeName = userMap.get(recognition.usuario_id) || "usuario";
       const safeName = slugify(employeeName) || "usuario";
-      const filename = `${cert.folio}-${safeName}.pdf`;
+      const filename = `${recognition.folio}-${safeName}.pdf`;
       const buffer = Buffer.from(await fileData.arrayBuffer());
 
       zip.file(filename, buffer);
@@ -89,7 +89,7 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers: {
         "content-type": "application/zip",
-        "content-disposition": 'attachment; filename="tecma-certificados-completados.zip"',
+        "content-disposition": 'attachment; filename="tecma-reconocimientos-completados.zip"',
         "cache-control": "no-store",
       },
       isBase64Encoded: true,

@@ -4,15 +4,15 @@ const QRCode = require("qrcode");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 const {
   STATUS,
-  CERT_BUCKET,
+  RECOGNITION_BUCKET,
   QUIZ_TOTAL_QUESTIONS,
   json,
   parseBody,
   getSupabaseAdmin,
   randomToken,
-  buildFolio,
+  buildRecognitionFolio,
   nowIso,
-  ensureCertificatesBucket,
+  ensureRecognitionsBucket,
   createSignedDownloadUrl,
   logAudit,
 } = require("./_lib/common");
@@ -20,9 +20,9 @@ const {
 function getVerifyUrl(token) {
   const baseUrl = (process.env.PUBLIC_SITE_URL || process.env.URL || "").replace(/\/$/, "");
   if (!baseUrl) {
-    return `/api/certificates/verify?token=${token}`;
+    return `/api/recognitions/verify?token=${token}`;
   }
-  return `${baseUrl}/api/certificates/verify?token=${token}`;
+  return `${baseUrl}/api/recognitions/verify?token=${token}`;
 }
 
 function parseImageDataUrl(dataUrl) {
@@ -211,7 +211,7 @@ function fitImageContain(image, maxWidth, maxHeight) {
   };
 }
 
-async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, verifyUrl, photoDataUrl }) {
+async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, verifyUrl, photoDataUrl }) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -242,7 +242,7 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
 
   const logoImage = await embedLocalPng(pdfDoc, "tecma-logo.png");
   const watermarkImage = await embedLocalPng(pdfDoc, "tecma-badge.png");
-  const sealImage = await embedLocalPng(pdfDoc, "tecma-badge-alt.png");
+  const headerBadgeImage = await embedLocalPng(pdfDoc, "tecma-badge-alt.png");
 
   let employeePhoto = null;
   const parsedImage = parseImageDataUrl(photoDataUrl);
@@ -344,7 +344,7 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
     color: rgb(0.85, 0.90, 0.98),
   });
 
-  const flagsX = inner.x + inner.width - 176;
+  const flagsX = inner.x + inner.width - 224;
   drawFlagPill(page, {
     x: flagsX,
     y: header.y + 14,
@@ -370,6 +370,25 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
     textColor: colors.navy,
   });
 
+  if (headerBadgeImage) {
+    const badgeFit = fitImageContain(headerBadgeImage, 34, 34);
+    page.drawRectangle({
+      x: inner.x + inner.width - 56,
+      y: header.y + 9,
+      width: 38,
+      height: 38,
+      color: colors.white,
+      borderColor: rgb(0.78, 0.82, 0.90),
+      borderWidth: 0.8,
+    });
+    page.drawImage(headerBadgeImage, {
+      x: inner.x + inner.width - 54 + (34 - badgeFit.width) / 2,
+      y: header.y + 11 + (34 - badgeFit.height) / 2,
+      width: badgeFit.width,
+      height: badgeFit.height,
+    });
+  }
+
   if (watermarkImage) {
     const watermarkSize = fitImageContain(watermarkImage, 260, 260);
     page.drawImage(watermarkImage, {
@@ -381,7 +400,7 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
     });
   }
 
-  drawCenteredText(page, "CERTIFICADO DE CUMPLIMIENTO DE POLITICA SOCIAL T-MEC", {
+  drawCenteredText(page, "RECONOCIMIENTO DE CUMPLIMIENTO DE POLITICA SOCIAL T-MEC", {
     font: fontBold,
     size: 14,
     color: rgb(0.82, 0.44, 0.12),
@@ -391,18 +410,18 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
   const textX = 46;
   const textTopY = 648;
   const textWidth = 350;
-  const bodyText = `Por la presente se certifica que ${safeEmployeeName} ha leido, comprendido y aprobado el curso sobre la Politica Social del T-MEC, con especial enfasis en la prevencion del Trabajo Forzado, en cumplimiento con el Capitulo 23 del Tratado.`;
-  const lines = wrapText(fontRegular, bodyText, 12.8, textWidth);
+  const bodyText = `Por medio del presente se reconoce que ${safeEmployeeName}, colaborador(a) de TECMA Transportation Services S. de R.L. de C.V., realizó la lectura del documento y la visualización del video correspondiente a la Política Social, como parte de las actividades internas de difusión, conocimiento y fortalecimiento de la cultura de cumplimiento de la empresa con especial énfasis en la prevención del Trabajo Forzado e Infantil, en cumplimiento con el Capítulo 23 del Tratado del T-MEC.`;
+  const lines = wrapText(fontRegular, bodyText, 11.8, textWidth);
   let cursorY = textTopY;
   for (const line of lines) {
     page.drawText(line, {
       x: textX,
       y: cursorY,
-      size: 12.8,
+      size: 11.8,
       font: fontRegular,
       color: colors.text,
     });
-    cursorY -= 22;
+    cursorY -= 19;
   }
 
   const photoCard = { x: 420, y: 505, width: 142, height: 220 };
@@ -524,7 +543,7 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
     color: colors.text,
   });
 
-  page.drawText(`Calificacion: ${score}/${QUIZ_TOTAL_QUESTIONS}`, {
+  page.drawText(`Calificación: ${score}/${QUIZ_TOTAL_QUESTIONS}`, {
     x: 46,
     y: 370,
     size: 11.2,
@@ -538,7 +557,7 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
     thickness: 1.2,
     color: colors.navySoft,
   });
-  page.drawText("Comite de Cumplimiento Social T-MEC", {
+  page.drawText("Comité de Cumplimiento Social T-MEC", {
     x: 46,
     y: 175,
     size: 10.5,
@@ -546,34 +565,25 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
     color: colors.text,
   });
 
-  const sealCard = { x: 430, y: 124, width: 130, height: 108 };
-  page.drawRectangle({
-    x: sealCard.x,
-    y: sealCard.y,
-    width: sealCard.width,
-    height: sealCard.height,
-    color: rgb(0.95, 0.96, 0.99),
-    borderColor: colors.line,
-    borderWidth: 1.2,
+  page.drawLine({
+    start: { x: 332, y: 196 },
+    end: { x: 548, y: 196 },
+    thickness: 1.2,
+    color: colors.navySoft,
   });
-
-  if (sealImage) {
-    const sealFit = fitImageContain(sealImage, 58, 58);
-    page.drawImage(sealImage, {
-      x: sealCard.x + (sealCard.width - sealFit.width) / 2,
-      y: sealCard.y + 34,
-      width: sealFit.width,
-      height: sealFit.height,
-    });
-  }
-
-  drawCenteredTextInBox(page, "Sello oficial TECMA", {
-    font: fontBold,
-    size: 8.2,
-    color: colors.navy,
-    x: sealCard.x,
-    width: sealCard.width,
-    y: sealCard.y + 12,
+  page.drawText("GEORGINA SÁNCHEZ", {
+    x: 332,
+    y: 175,
+    size: 10.5,
+    font: fontRegular,
+    color: colors.text,
+  });
+  page.drawText("Representante Legal", {
+    x: 332,
+    y: 160,
+    size: 10,
+    font: fontRegular,
+    color: colors.text,
   });
 
   page.drawLine({
@@ -646,7 +656,7 @@ exports.handler = async (event) => {
 
     const { data: user, error: userError } = await supabase
       .from("usuarios")
-      .select("id,nombre")
+      .select("id,nombre,codigo_interno")
       .eq("id", userId)
       .maybeSingle();
 
@@ -656,6 +666,31 @@ exports.handler = async (event) => {
 
     if (!user) {
       return json(404, { error: "User not found" });
+    }
+
+    if (!String(user.codigo_interno || "").trim()) {
+      return json(400, {
+        error:
+          "No se puede generar el reconocimiento: el número de empleado (codigo_interno) es obligatorio.",
+      });
+    }
+
+    const { data: progress, error: progressError } = await supabase
+      .from("progreso_test")
+      .select("estado,recognition_id")
+      .eq("usuario_id", userId)
+      .maybeSingle();
+
+    if (progressError) {
+      return json(500, { error: progressError.message });
+    }
+
+    if (progress?.estado === STATUS.COMPLETADO || progress?.recognition_id) {
+      return json(403, {
+        blocked: true,
+        error:
+          "Este colaborador ya completó el flujo y cuenta con reconocimiento emitido. No es posible rehacer el proceso.",
+      });
     }
 
     const { data: latestAttempt, error: attemptError } = await supabase
@@ -676,8 +711,8 @@ exports.handler = async (event) => {
       });
     }
 
-    const { data: existingCert, error: existingError } = await supabase
-      .from("certificados")
+    const { data: existingRecognition, error: existingError } = await supabase
+      .from("reconocimientos")
       .select("id,folio,issued_at,file_path,verify_token")
       .eq("usuario_id", userId)
       .maybeSingle();
@@ -686,23 +721,23 @@ exports.handler = async (event) => {
       return json(500, { error: existingError.message });
     }
 
-    if (existingCert?.file_path) {
+    if (existingRecognition?.file_path) {
       const completedAt = nowIso();
 
-      await ensureCertificatesBucket(supabase);
+      await ensureRecognitionsBucket(supabase);
 
-      const refreshedPdf = await buildCertificatePdf({
+      const refreshedPdf = await buildRecognitionPdf({
         employeeName: user.nombre,
-        folio: existingCert.folio,
-        issuedAtIso: existingCert.issued_at || completedAt,
+        folio: existingRecognition.folio,
+        issuedAtIso: existingRecognition.issued_at || completedAt,
         score: latestAttempt.score,
-        verifyUrl: getVerifyUrl(existingCert.verify_token),
+        verifyUrl: getVerifyUrl(existingRecognition.verify_token),
         photoDataUrl,
       });
 
       const { error: refreshUploadError } = await supabase.storage
-        .from(CERT_BUCKET)
-        .upload(existingCert.file_path, Buffer.from(refreshedPdf), {
+        .from(RECOGNITION_BUCKET)
+        .upload(existingRecognition.file_path, Buffer.from(refreshedPdf), {
           contentType: "application/pdf",
           upsert: true,
         });
@@ -716,7 +751,7 @@ exports.handler = async (event) => {
         .update({
           estado: STATUS.COMPLETADO,
           completed_at: completedAt,
-          certificate_id: existingCert.id,
+          recognition_id: existingRecognition.id,
           updated_at: completedAt,
         })
         .eq("usuario_id", userId);
@@ -724,89 +759,83 @@ exports.handler = async (event) => {
       await logAudit(supabase, {
         usuarioId: userId,
         actor: "SYSTEM",
-        action: "CERTIFICATE_REFRESHED",
-        metadata: { certificate_id: existingCert.id, folio: existingCert.folio },
+        action: "RECOGNITION_REFRESHED",
+        metadata: { recognition_id: existingRecognition.id, folio: existingRecognition.folio },
       });
 
-      const downloadUrl = await createSignedDownloadUrl(supabase, existingCert.file_path);
+      const downloadUrl = await createSignedDownloadUrl(supabase, existingRecognition.file_path);
       return json(200, {
-        certificate: {
-          id: existingCert.id,
-          folio: existingCert.folio,
-          issued_at: existingCert.issued_at,
-          verify_url: getVerifyUrl(existingCert.verify_token),
+        recognition: {
+          id: existingRecognition.id,
+          folio: existingRecognition.folio,
+          issued_at: existingRecognition.issued_at,
+          verify_url: getVerifyUrl(existingRecognition.verify_token),
           download_url: downloadUrl,
           existing: true,
         },
       });
     }
 
-    await ensureCertificatesBucket(supabase);
+    await ensureRecognitionsBucket(supabase);
 
-    let createdCertificate = null;
-    let uploadPath = null;
+    const issuedAt = nowIso();
+    const folio = buildRecognitionFolio(user.codigo_interno, "2026");
+    const verifyToken = randomToken(20);
+    const verifyUrl = getVerifyUrl(verifyToken);
+    const pdfBytes = await buildRecognitionPdf({
+      employeeName: user.nombre,
+      folio,
+      issuedAtIso: issuedAt,
+      score: latestAttempt.score,
+      verifyUrl,
+      photoDataUrl,
+    });
+    const filePath = `user-${user.id}/${folio}.pdf`;
 
-    for (let i = 0; i < 4; i += 1) {
-      const issuedAt = nowIso();
-      const folio = buildFolio(new Date());
-      const verifyToken = randomToken(20);
-      const verifyUrl = getVerifyUrl(verifyToken);
-      const pdfBytes = await buildCertificatePdf({
-        employeeName: user.nombre,
-        folio,
-        issuedAtIso: issuedAt,
-        score: latestAttempt.score,
-        verifyUrl,
-        photoDataUrl,
+    const { error: uploadError } = await supabase.storage
+      .from(RECOGNITION_BUCKET)
+      .upload(filePath, Buffer.from(pdfBytes), {
+        contentType: "application/pdf",
+        upsert: false,
       });
 
-      const filePath = `user-${user.id}/${folio}.pdf`;
+    if (uploadError) {
+      return json(500, { error: uploadError.message });
+    }
 
-      const { error: uploadError } = await supabase.storage
-        .from(CERT_BUCKET)
-        .upload(filePath, Buffer.from(pdfBytes), {
-          contentType: "application/pdf",
-          upsert: false,
+    const { data: createdRecognition, error: insertError } = await supabase
+      .from("reconocimientos")
+      .insert({
+        usuario_id: userId,
+        folio,
+        verify_token: verifyToken,
+        issued_at: issuedAt,
+        score: latestAttempt.score,
+        file_path: filePath,
+      })
+      .select("id,folio,issued_at,file_path,verify_token")
+      .single();
+
+    if (insertError) {
+      await supabase.storage.from(RECOGNITION_BUCKET).remove([filePath]);
+      const lowerMessage = String(insertError.message || "").toLowerCase();
+      if (lowerMessage.includes("duplicate")) {
+        return json(409, {
+          error:
+            "No se pudo generar el reconocimiento porque el folio ya existe. Verifica que el número de empleado sea único.",
         });
-
-      if (uploadError) {
-        continue;
       }
-
-      const { data: insertedCert, error: insertError } = await supabase
-        .from("certificados")
-        .insert({
-          usuario_id: userId,
-          folio,
-          verify_token: verifyToken,
-          issued_at: issuedAt,
-          score: latestAttempt.score,
-          file_path: filePath,
-        })
-        .select("id,folio,issued_at,file_path,verify_token")
-        .single();
-
-      if (insertError) {
-        await supabase.storage.from(CERT_BUCKET).remove([filePath]);
-        continue;
-      }
-
-      createdCertificate = insertedCert;
-      uploadPath = filePath;
-      break;
+      return json(500, { error: insertError.message });
     }
 
-    if (!createdCertificate || !uploadPath) {
-      return json(500, { error: "Unable to generate certificate after retries" });
-    }
-
+    const completedAt = nowIso();
     const { error: updateProgressError } = await supabase
       .from("progreso_test")
       .update({
         estado: STATUS.COMPLETADO,
-        completed_at: nowIso(),
-        certificate_id: createdCertificate.id,
-        updated_at: nowIso(),
+        completed_at: completedAt,
+        recognition_id: createdRecognition.id,
+        updated_at: completedAt,
       })
       .eq("usuario_id", userId);
 
@@ -817,21 +846,21 @@ exports.handler = async (event) => {
     await logAudit(supabase, {
       usuarioId: userId,
       actor: "SYSTEM",
-      action: "CERTIFICATE_GENERATED",
+      action: "RECOGNITION_GENERATED",
       metadata: {
-        certificate_id: createdCertificate.id,
-        folio: createdCertificate.folio,
+        recognition_id: createdRecognition.id,
+        folio: createdRecognition.folio,
       },
     });
 
-    const downloadUrl = await createSignedDownloadUrl(supabase, uploadPath);
+    const downloadUrl = await createSignedDownloadUrl(supabase, filePath);
 
     return json(201, {
-      certificate: {
-        id: createdCertificate.id,
-        folio: createdCertificate.folio,
-        issued_at: createdCertificate.issued_at,
-        verify_url: getVerifyUrl(createdCertificate.verify_token),
+      recognition: {
+        id: createdRecognition.id,
+        folio: createdRecognition.folio,
+        issued_at: createdRecognition.issued_at,
+        verify_url: getVerifyUrl(createdRecognition.verify_token),
         download_url: downloadUrl,
         existing: false,
       },

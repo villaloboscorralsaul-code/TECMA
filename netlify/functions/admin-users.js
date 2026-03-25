@@ -37,23 +37,25 @@ exports.handler = async (event) => {
 
     const progressMap = await getProgressMap(supabase, userIds);
 
-    let certificateMap = new Map();
+    let recognitionMap = new Map();
     if (userIds.length > 0) {
-      const { data: certRows, error: certError } = await supabase
-        .from("certificados")
+      const { data: recognitionRows, error: recognitionError } = await supabase
+        .from("reconocimientos")
         .select("id,usuario_id,folio,issued_at,file_path")
         .in("usuario_id", userIds);
 
-      if (certError) {
-        return json(500, { error: certError.message });
+      if (recognitionError) {
+        return json(500, { error: recognitionError.message });
       }
 
-      certificateMap = new Map((certRows || []).map((cert) => [cert.usuario_id, cert]));
+      recognitionMap = new Map(
+        (recognitionRows || []).map((recognition) => [recognition.usuario_id, recognition])
+      );
     }
 
     let rows = userRows.map((user) => {
       const progress = progressMap.get(user.id);
-      const cert = certificateMap.get(user.id);
+      const recognition = recognitionMap.get(user.id);
 
       return {
         id: user.id,
@@ -66,9 +68,9 @@ exports.handler = async (event) => {
         last_quiz_score: progress?.last_quiz_score ?? null,
         attempt_count: progress?.attempt_count ?? 0,
         completed_at: progress?.completed_at || null,
-        certificate_id: cert?.id || null,
-        certificate_folio: cert?.folio || null,
-        certificate_issued_at: cert?.issued_at || null,
+        recognition_id: recognition?.id || null,
+        recognition_folio: recognition?.folio || null,
+        recognition_issued_at: recognition?.issued_at || null,
       };
     });
 

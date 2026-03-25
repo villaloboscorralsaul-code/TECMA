@@ -45,10 +45,25 @@
             </div>
 
             <div class="entry-form">
-              <label for="employeeSelect">Selecciona tu nombre</label>
-              <select id="employeeSelect" name="employeeSelect">
-                <option value="">Cargando padrón...</option>
-              </select>
+              <label for="employeeSearch">Seleccionar Nombre</label>
+              <div class="autocomplete-wrap">
+                <input
+                  id="employeeSearch"
+                  name="employeeSearch"
+                  class="employee-search"
+                  type="search"
+                  placeholder="Escribe tu nombre o número de empleado"
+                  autocomplete="off"
+                  autocapitalize="words"
+                  spellcheck="false"
+                />
+                <div
+                  id="employeeAutocomplete"
+                  class="autocomplete-list hidden"
+                  role="listbox"
+                  aria-label="Sugerencias de colaboradores"
+                ></div>
+              </div>
 
               <div class="entry-inline-actions">
                 <button id="reloadRosterBtn" class="btn btn-secondary" type="button">
@@ -60,7 +75,7 @@
               <p id="selectedUserMeta" class="selected-user-meta hidden"></p>
 
               <div class="photo-capture">
-                <label for="employeePhotoInput">Fotografía para certificado</label>
+                <label for="employeePhotoInput">Fotografía para reconocimiento</label>
                 <input
                   id="employeePhotoInput"
                   class="photo-input"
@@ -89,7 +104,7 @@
               <p id="entryMessage" class="entry-message"></p>
 
               <p class="disclaimer">
-                Selecciona tu nombre del padrón y captura fotografía para generar un certificado
+                Selecciona tu nombre del padrón y captura fotografía para generar un reconocimiento
                 oficial.
               </p>
             </div>
@@ -136,10 +151,61 @@
 
             <p id="welcomeStatus" class="status-banner hidden"></p>
 
-            <div class="symbol-row" aria-label="Simbología institucional">
-              <span class="symbol-pill">Apretón de manos</span>
-              <span class="symbol-pill">Hoja de maple</span>
-              <span class="symbol-pill">Águila</span>
+            <div class="symbol-row" aria-label="Ejes de Política Social">
+              <span class="symbol-pill">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 3 4.5 6v5.7c0 4.7 3.2 8.8 7.5 9.9 4.3-1.1 7.5-5.2 7.5-9.9V6L12 3Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="m8.7 12.1 2.2 2.2 4.4-4.6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                Cumplimiento Laboral
+              </span>
+              <span class="symbol-pill">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 21s-6.8-3.9-6.8-9.2A4.2 4.2 0 0 1 9.4 7c1.2 0 2.2.5 2.6 1.3.4-.8 1.4-1.3 2.6-1.3a4.2 4.2 0 0 1 4.2 4.8C18.8 17.1 12 21 12 21Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                Derechos Humanos
+              </span>
+              <span class="symbol-pill">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M5 19h14M7.5 19V9.5L12 6l4.5 3.5V19M12 6V3"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M10 13h4"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                Prevención de Riesgos
+              </span>
             </div>
 
             <button id="goPolicyBtn" class="btn btn-primary" type="button">
@@ -158,7 +224,7 @@
                   src="/assets/tecma-logo.png"
                   alt="Logotipo TECMA"
                 />
-                <h2 id="policyTitle">Política Social TECMA</h2>
+                <h2 id="policyTitle">Política Social</h2>
                 <p class="policy-subtitle">
                   Capítulo Laboral T-MEC - Cumplimiento y protección de derechos
                 </p>
@@ -168,9 +234,9 @@
                 <figure class="policy-image-card">
                   <img
                     src="/assets/politica-social-4.png"
-                    alt="Política Social TECMA - Imagen oficial"
+                    alt="Política Social - Imagen oficial"
                   />
-                  <figcaption>Política Social oficial (Imagen 4)</figcaption>
+                  <figcaption>Política Social oficial</figcaption>
                 </figure>
 
                 <section class="policy-video-card" aria-labelledby="policyVideoTitle">
@@ -200,7 +266,7 @@
 
                 <label class="commit-check">
                   <input id="commitCheck" type="checkbox" disabled />
-                  <span>He leído y comprendido la Política Social T-MEC.</span>
+                  <span>He leído y comprendido la Política Social.</span>
                 </label>
 
                 <button id="acceptBtn" class="btn btn-commitment" type="button" disabled>
@@ -256,19 +322,24 @@
 
             <div class="result-actions">
               <button id="retryQuizBtn" class="btn btn-secondary" type="button">Reintentar quiz</button>
-              <button id="generateCertBtn" class="btn btn-primary" type="button">
-                Generar certificado oficial
+              <button id="generateRecognitionBtn" class="btn btn-primary" type="button">
+                Generar reconocimiento oficial
               </button>
             </div>
           </div>
         </section>
 
-        <section id="certificateStep" class="step" aria-labelledby="certTitle">
-          <div class="panel certificate-panel">
-            <div id="certificatePrintArea" class="certificate-document">
-              <header class="cert-header">
-                <div class="tecma-logo large">
-                  <img src="/assets/tecma-logo.png" alt="Logotipo oficial de TECMA" />
+        <section id="recognitionStep" class="step" aria-labelledby="recognitionTitle">
+          <div class="panel recognition-panel">
+            <div id="recognitionPrintArea" class="recognition-document">
+              <header class="recognition-header">
+                <div class="recognition-header-logos">
+                  <div class="tecma-logo large">
+                    <img src="/assets/tecma-logo.png" alt="Logotipo oficial de TECMA" />
+                  </div>
+                  <div class="header-badge">
+                    <img src="/assets/tecma-badge-alt.png" alt="Insignia oficial TECMA" />
+                  </div>
                 </div>
                 <div class="flag-group">
                   <span class="flag flag-mx">MEX</span>
@@ -277,44 +348,51 @@
                 </div>
               </header>
 
-              <h2 id="certTitle" class="cert-title">
-                CERTIFICADO DE CUMPLIMIENTO DE POLÍTICA SOCIAL T-MEC
+              <h2 id="recognitionTitle" class="recognition-title">
+                RECONOCIMIENTO DE CUMPLIMIENTO DE POLÍTICA SOCIAL T-MEC
               </h2>
 
-              <div class="cert-identity-row">
-                <p class="cert-text">
-                  Por la presente se certifica que
-                  <strong id="certName">[NOMBRE DEL EMPLEADO]</strong>
-                  ha leído, comprendido y aprobado el curso sobre la Política Social del T-MEC,
-                  con especial énfasis en la prevención del Trabajo Forzado, en cumplimiento con
-                  el Capítulo 23 del Tratado.
+              <div class="recognition-identity-row">
+                <p class="recognition-text">
+                  Por medio del presente se reconoce que
+                  <strong id="recognitionName">[NOMBRE DEL COLABORADOR]</strong>,
+                  colaborador(a) de TECMA Transportation Services S. de R.L. de C.V., realizó la
+                  lectura del documento y la visualización del video correspondiente a la Política
+                  Social, como parte de las actividades internas de difusión, conocimiento y
+                  fortalecimiento de la cultura de cumplimiento de la empresa con especial énfasis
+                  en la prevención del Trabajo Forzado e Infantil, en cumplimiento con el Capítulo
+                  23 del Tratado del T-MEC.
                 </p>
 
-                <figure class="cert-photo-wrap">
-                  <img id="certPhoto" class="cert-photo hidden" alt="Fotografía del colaborador" />
-                  <div id="certPhotoFallback" class="cert-photo-empty">Sin foto</div>
+                <figure class="recognition-photo-wrap">
+                  <img
+                    id="recognitionPhoto"
+                    class="recognition-photo hidden"
+                    alt="Fotografía del colaborador"
+                  />
+                  <div id="recognitionPhotoFallback" class="recognition-photo-empty">Sin foto</div>
                   <figcaption>Fotografía del colaborador</figcaption>
                 </figure>
               </div>
 
-              <div class="cert-meta">
-                <p><strong>Fecha de finalización:</strong> <span id="certDate"></span></p>
-                <p><strong>Folio:</strong> <span id="certFolio"></span></p>
+              <div class="recognition-meta">
+                <p><strong>Fecha de finalización:</strong> <span id="recognitionDate"></span></p>
+                <p><strong>Folio:</strong> <span id="recognitionFolio"></span></p>
               </div>
 
-              <div class="cert-signature-row">
+              <div class="recognition-signature-row">
                 <div class="signature-box">
                   <p class="signature-line">____________________________</p>
                   <p>Comité de Cumplimiento Social T-MEC</p>
                 </div>
-
-                <div class="seal">
-                  <img src="/assets/tecma-badge-alt.png" alt="Sello oficial TECMA" />
-                  <span>Sello oficial TECMA</span>
+                <div class="signature-box">
+                  <p class="signature-line">____________________________</p>
+                  <p>GEORGINA SÁNCHEZ</p>
+                  <p>Representante Legal</p>
                 </div>
               </div>
 
-              <footer class="cert-footer">
+              <footer class="recognition-footer">
                 <div class="timeline" aria-hidden="true">
                   <span class="dot mx"></span>
                   <span class="line"></span>
@@ -323,15 +401,20 @@
                   <span class="dot ca"></span>
                 </div>
                 <div class="verify-block">
-                  <canvas id="certQr" width="110" height="110" aria-label="QR de verificación"></canvas>
+                  <canvas
+                    id="recognitionQr"
+                    width="110"
+                    height="110"
+                    aria-label="QR de verificación"
+                  ></canvas>
                   <p id="verifyUrl"></p>
                 </div>
               </footer>
             </div>
 
-            <div class="certificate-actions no-print">
-              <button id="printCertBtn" class="btn btn-primary" type="button">
-                Descargar certificado PDF
+            <div class="recognition-actions no-print">
+              <button id="printRecognitionBtn" class="btn btn-primary" type="button">
+                Descargar reconocimiento PDF
               </button>
               <button id="newSessionBtn" class="btn btn-secondary" type="button">
                 Iniciar nuevo proceso

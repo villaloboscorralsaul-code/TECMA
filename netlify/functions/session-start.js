@@ -40,7 +40,7 @@ exports.handler = async (event) => {
 
     const { data: progress, error: progressError } = await supabase
       .from("progreso_test")
-      .select("estado,started_at,completed_at,certificate_id")
+      .select("estado,started_at,completed_at,recognition_id")
       .eq("usuario_id", userId)
       .maybeSingle();
 
@@ -49,7 +49,6 @@ exports.handler = async (event) => {
     }
 
     let nextState = STATUS.EN_PROCESO;
-    let alreadyCompleted = false;
 
     if (!progress) {
       const { error: createProgressError } = await supabase.from("progreso_test").insert({
@@ -63,9 +62,21 @@ exports.handler = async (event) => {
       if (createProgressError) {
         return json(500, { error: createProgressError.message });
       }
-    } else if (progress.estado === STATUS.COMPLETADO) {
-      nextState = STATUS.COMPLETADO;
-      alreadyCompleted = true;
+    } else if (progress.estado === STATUS.COMPLETADO || progress.recognition_id) {
+      await logAudit(supabase, {
+        usuarioId: userId,
+        actor: "SYSTEM",
+        action: "SESSION_BLOCKED_COMPLETED",
+        metadata: {
+          reason: "FLOW_ALREADY_COMPLETED",
+        },
+      });
+
+      return json(403, {
+        blocked: true,
+        error:
+          "Este colaborador ya completó el flujo y cuenta con un reconocimiento emitido. No es posible rehacer el proceso.",
+      });
     } else {
       const { error: updateProgressError } = await supabase
         .from("progreso_test")
@@ -85,9 +96,7 @@ exports.handler = async (event) => {
       usuarioId: userId,
       actor: "USER",
       action: "SESSION_STARTED",
-      metadata: {
-        already_completed: alreadyCompleted,
-      },
+      metadata: {},
     });
 
     return json(200, {
@@ -98,7 +107,8 @@ exports.handler = async (event) => {
         area: user.area || null,
       },
       estado: nextState,
-      already_completed: alreadyCompleted,
+      already_completed: false,
+      blocked: false,
     });
   } catch (err) {
     return json(500, { error: err.message || "Unexpected error" });
