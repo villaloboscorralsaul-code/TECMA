@@ -513,21 +513,7 @@ p {
 .policy-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.policy-index {
-  border: 1px solid var(--tecma-silver);
-  border-radius: 12px;
-  padding: 10px 12px;
-  background: #f7faff;
-}
-
-.policy-index ol {
-  margin: 0;
-  padding-left: 20px;
-  color: #43506b;
-  font-size: 0.9rem;
+  gap: 12px;
 }
 
 .policy-content header {
@@ -548,66 +534,48 @@ p {
   color: var(--tecma-gray);
 }
 
-.policy-scroll {
-  position: relative;
-  max-height: 46vh;
-  overflow: auto;
-  padding: 16px;
+.policy-media-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.policy-image-card,
+.policy-video-card {
+  margin: 0;
+  padding: 10px;
   border-radius: 14px;
-  border: 1px solid #d8dfec;
-  background: linear-gradient(180deg, #fffdf9 0%, #f7f2e7 100%);
-  box-shadow: inset 0 0 0 4px rgba(244, 122, 32, 0.08);
+  border: 1px solid #d2dbeb;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8ff 100%);
 }
 
-.policy-scroll::before {
-  content: "";
-  position: absolute;
-  right: -36px;
-  bottom: -36px;
-  width: 170px;
-  height: 170px;
-  background: url("/assets/tecma-badge-alt.png") center / contain no-repeat;
-  opacity: 0.11;
-  pointer-events: none;
+.policy-image-card img {
+  display: block;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #c7d2e8;
+  background: #fff;
 }
 
-.policy-scroll:focus {
-  outline: 3px solid rgba(244, 122, 32, 0.22);
-}
-
-.policy-section {
-  margin-bottom: 14px;
-}
-
-.policy-section h3 {
-  display: inline-block;
-  margin-bottom: 7px;
-  color: var(--tecma-navy);
-  font-size: 1rem;
-  border-bottom: 2px solid rgba(244, 122, 32, 0.8);
-  padding-bottom: 3px;
-}
-
-.policy-section.highlighted {
-  border-left: 4px solid var(--tecma-red);
-  padding-left: 10px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.58);
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.chips span {
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.78rem;
+.policy-image-card figcaption {
+  margin-top: 8px;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: #fff;
-  background: linear-gradient(110deg, var(--tecma-navy) 0%, #2a4678 70%, var(--tecma-orange) 100%);
+  color: #435571;
+  text-align: center;
+}
+
+.policy-video-card h3 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: var(--tecma-navy);
+}
+
+.policy-video {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #bfcde8;
+  background: #0d1930;
+  max-height: 56vh;
 }
 
 .acceptance-block {
@@ -621,6 +589,17 @@ p {
   color: #385172;
   font-weight: 700;
   font-size: 0.9rem;
+}
+
+.video-status {
+  margin: 8px 0 0;
+  color: #415675;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.video-status.done {
+  color: #1f6c4a;
 }
 
 .commit-check {
@@ -662,7 +641,7 @@ p {
 .quiz-progress {
   margin: 12px 0 16px;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(var(--segments-count, 5), minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -1094,17 +1073,12 @@ p {
   }
 
   .policy-layout {
-    grid-template-columns: 220px 1fr;
+    gap: 14px;
   }
 
-  .policy-index {
-    align-self: start;
-    position: sticky;
-    top: 92px;
-  }
-
-  .policy-scroll {
-    max-height: 430px;
+  .policy-media-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
   }
 
   .quiz-head {

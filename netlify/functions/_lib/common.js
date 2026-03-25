@@ -9,6 +9,7 @@ const STATUS = {
 };
 
 const PASSING_SCORE = 4;
+const QUIZ_TOTAL_QUESTIONS = 7;
 const CERT_BUCKET = process.env.CERTIFICATES_BUCKET || "certificates";
 
 function json(statusCode, payload) {
@@ -187,6 +188,7 @@ async function logAudit(supabase, { usuarioId = null, actor = "SYSTEM", action, 
 module.exports = {
   STATUS,
   PASSING_SCORE,
+  QUIZ_TOTAL_QUESTIONS,
   CERT_BUCKET,
   json,
   parseBody,

@@ -5,6 +5,7 @@ const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 const {
   STATUS,
   CERT_BUCKET,
+  QUIZ_TOTAL_QUESTIONS,
   json,
   parseBody,
   getSupabaseAdmin,
@@ -523,7 +524,7 @@ async function buildCertificatePdf({ employeeName, folio, issuedAtIso, score, ve
     color: colors.text,
   });
 
-  page.drawText(`Calificacion: ${score}/5`, {
+  page.drawText(`Calificacion: ${score}/${QUIZ_TOTAL_QUESTIONS}`, {
     x: 46,
     y: 370,
     size: 11.2,

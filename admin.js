@@ -5,6 +5,7 @@ const state = {
   loading: false,
 };
 const REQUEST_TIMEOUT_MS = 45000;
+const QUIZ_TOTAL_QUESTIONS = 7;
 
 const refs = {
   accessInfo: document.querySelector("#accessInfo"),
@@ -172,7 +173,8 @@ function renderUsers() {
 
   refs.usersTableBody.innerHTML = state.users
     .map((row) => {
-      const scoreText = row.last_quiz_score == null ? "-" : `${row.last_quiz_score}/5`;
+      const scoreText =
+        row.last_quiz_score == null ? "-" : `${row.last_quiz_score}/${QUIZ_TOTAL_QUESTIONS}`;
       const folioText = row.certificate_folio || "-";
       const code = row.codigo_interno || "-";
       const area = row.area || "-";

@@ -150,16 +150,6 @@
 
         <section id="policyStep" class="step" aria-labelledby="policyTitle">
           <div class="panel policy-layout">
-            <aside class="policy-index">
-              <p class="kicker">Índice</p>
-              <ol>
-                <li>Principios generales</li>
-                <li>Prevención del trabajo forzado</li>
-                <li>Canales de denuncia</li>
-                <li>Compromiso individual</li>
-              </ol>
-            </aside>
-
             <div class="policy-content">
               <header>
                 <p class="kicker">Documento Oficial</p>
@@ -174,61 +164,38 @@
                 </p>
               </header>
 
-              <article id="policyScroll" class="policy-scroll" tabindex="0">
-                <section class="policy-section">
-                  <h3>1. Principios Generales de Cumplimiento Social</h3>
-                  <p>
-                    TECMA mantiene una política de cumplimiento social basada en legalidad,
-                    dignidad humana y mejora continua. Todas las operaciones, decisiones de
-                    supervisión y evaluaciones de desempeño deben alinearse con estándares
-                    laborales nacionales e internacionales aplicables al T-MEC.
+              <div class="policy-media-grid">
+                <figure class="policy-image-card">
+                  <img
+                    src="/assets/politica-social-4.png"
+                    alt="Política Social TECMA - Imagen oficial"
+                  />
+                  <figcaption>Política Social oficial (Imagen 4)</figcaption>
+                </figure>
+
+                <section class="policy-video-card" aria-labelledby="policyVideoTitle">
+                  <h3 id="policyVideoTitle">Video oficial de cumplimiento (obligatorio)</h3>
+                  <video
+                    id="policyVideo"
+                    class="policy-video"
+                    controls
+                    playsinline
+                    preload="metadata"
+                    controlsList="nodownload noplaybackrate"
+                    poster="/assets/politica-social-4.png"
+                  >
+                    <source src="/assets/politica-social-video-4.mp4" type="video/mp4" />
+                    Tu navegador no soporta video HTML5.
+                  </video>
+                  <p id="videoStatus" class="video-status">
+                    Debes ver el video completo para habilitar el botón de aceptación.
                   </p>
                 </section>
-
-                <section class="policy-section highlighted">
-                  <h3>2. Prevención del Trabajo Forzado (Capítulo 23 T-MEC)</h3>
-                  <p>
-                    TECMA, en alineación con los principios del Capítulo 23 del T-MEC, prohíbe
-                    de forma absoluta toda modalidad de trabajo forzado u obligatorio. Ninguna
-                    persona trabajadora podrá ser retenida mediante amenazas, coerción,
-                    retención de documentos, deudas impuestas, restricciones indebidas de
-                    movilidad o cualquier práctica que vulnere su libertad laboral. La empresa
-                    establece mecanismos de denuncia confidencial, investigación inmediata y
-                    protección contra represalias para garantizar condiciones de empleo dignas,
-                    voluntarias y verificables en toda la cadena de suministro.
-                  </p>
-
-                  <div class="chips">
-                    <span>Prohibición absoluta</span>
-                    <span>Denuncia confidencial</span>
-                    <span>Cero represalias</span>
-                  </div>
-                </section>
-
-                <section class="policy-section">
-                  <h3>3. Canales Formales de Reporte</h3>
-                  <p>
-                    Cualquier señal de coerción, amenaza o restricción indebida deberá
-                    reportarse de inmediato mediante los canales de cumplimiento interno. Toda
-                    investigación debe quedar documentada con trazabilidad y control de tiempos,
-                    asegurando confidencialidad de la persona reportante.
-                  </p>
-                </section>
-
-                <section class="policy-section">
-                  <h3>4. Compromiso del Empleado y Seguimiento</h3>
-                  <p>
-                    Cada colaborador declara que comprende y aplicará esta política en su ámbito
-                    de trabajo. El incumplimiento de estos lineamientos puede derivar en acciones
-                    correctivas, disciplinarias o de escalamiento según normatividad vigente.
-                  </p>
-                </section>
-              </article>
+              </div>
 
               <div class="acceptance-block">
                 <p id="readStatus" class="read-status">
-                  Lee completamente el documento y permanece en esta sección al menos 12
-                  segundos.
+                  Requisito: completa el video al 100% para continuar.
                 </p>
 
                 <label class="commit-check">
@@ -251,16 +218,10 @@
                 <p class="kicker">Evaluación Rápida</p>
                 <h2 id="quizTitle">Cuestionario de Cumplimiento</h2>
               </div>
-              <div id="quizCounter" class="quiz-counter">Pregunta 1 de 5</div>
+              <div id="quizCounter" class="quiz-counter">Pregunta 1 de 7</div>
             </header>
 
-            <div id="quizProgress" class="quiz-progress" aria-label="Progreso del quiz">
-              <span class="segment"></span>
-              <span class="segment"></span>
-              <span class="segment"></span>
-              <span class="segment"></span>
-              <span class="segment"></span>
-            </div>
+            <div id="quizProgress" class="quiz-progress" aria-label="Progreso del quiz"></div>
 
             <article class="quiz-card">
               <div class="quiz-flags">

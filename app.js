@@ -1,4 +1,3 @@
-const MIN_POLICY_SECONDS = 12;
 const PASSING_SCORE = 4;
 const TECMA_LOGO_PATH = "/assets/tecma-logo.png";
 const OFFICIAL_ENTRY_QR_URL = "https://celebrated-profiterole-50371a.netlify.app/";
@@ -7,68 +6,87 @@ const PHOTO_MAX_EDGE = 960;
 const quizQuestions = [
   {
     id: "q1",
-    prompt: "¿Cuál de las siguientes situaciones describe trabajo forzado?",
+    prompt: "¿Qué situaciones busca evitar y reportar TTS en sus actividades?",
     options: [
-      "Horario flexible acordado voluntariamente.",
-      "Retención de pasaporte para obligar permanencia.",
-      "Capacitación obligatoria pagada.",
-      "Rotación de turnos con consentimiento.",
+      "El uso de uniformes de diferentes colores.",
+      "El trabajo forzoso y el trabajo infantil.",
+      "El tráfico en las rutas de transporte.",
     ],
     answer: 1,
-    correctHint: "La retención de documentos personales es una señal de coerción.",
-    wrongHint: "Revisa el principio de trabajo libre y voluntario.",
+    correctHint: "Correcto: la política se enfoca en prevenir trabajo forzoso e infantil.",
+    wrongHint: "Revisa el enfoque central de la política social de TTS.",
   },
   {
     id: "q2",
-    prompt: "Si un supervisor detecta indicios de coerción laboral, ¿qué debe hacer primero?",
+    prompt: "De acuerdo con la política, ¿qué es lo que TTS debe promover en todo momento?",
     options: [
-      "Ignorar hasta tener pruebas absolutas.",
-      "Reportar de inmediato al canal de cumplimiento.",
-      "Publicarlo en chat grupal.",
-      "Resolverlo sin registrar evidencia.",
+      "El respeto a la dignidad y los derechos de las personas.",
+      "El uso de redes sociales en horas de trabajo.",
+      "Solo la limpieza de los camiones.",
     ],
-    answer: 1,
-    correctHint: "El reporte inmediato activa protocolos de protección y trazabilidad.",
-    wrongHint: "El protocolo exige reporte formal inmediato y documentado.",
+    answer: 0,
+    correctHint: "Exacto: la dignidad y los derechos humanos son base de la política.",
+    wrongHint: "La política no trata de redes sociales ni solo de limpieza operativa.",
   },
   {
     id: "q3",
-    prompt: "Según la política, la retención de documentos personales del empleado:",
+    prompt: "¿En qué regla o tratado internacional se basa esta política de la empresa?",
     options: [
-      "Está permitida con autorización verbal.",
-      "Está prohibida bajo cualquier circunstancia coercitiva.",
-      "Es válida durante auditorías internas.",
-      "Depende del área administrativa.",
+      "En un manual de mecánica básica.",
+      "En el capítulo 23.6 del T-MEC.",
+      "En un contrato de publicidad externa.",
     ],
     answer: 1,
-    correctHint: "La retención indebida de documentos está expresamente prohibida.",
-    wrongHint: "La política establece prohibición absoluta de retención coercitiva.",
+    correctHint: "Correcto: esta política se alinea al capítulo 23.6 del T-MEC.",
+    wrongHint: "La base de cumplimiento indicada es el capítulo 23.6 del T-MEC.",
   },
   {
     id: "q4",
-    prompt: "¿Qué garantiza el canal de denuncia TECMA?",
+    prompt: "¿Qué tipo de productos o mercancías prohíbe la empresa?",
     options: [
-      "Publicidad del denunciante para transparencia.",
-      "Confidencialidad y protección contra represalias.",
-      "Respuesta solo anual.",
-      "Aplicación exclusiva a personal directivo.",
+      "Las que sean muy pesadas para cargar.",
+      "Las que fueron fabricadas usando trabajo forzoso o infantil.",
+      "Las que no tienen etiquetas de colores.",
     ],
     answer: 1,
-    correctHint: "La confidencialidad y la no represalia son garantías centrales.",
-    wrongHint: "Sin confidencialidad y protección no existe canal efectivo de denuncia.",
+    correctHint: "Exacto: se prohíben bienes vinculados con trabajo forzoso o infantil.",
+    wrongHint: "La restricción principal es de origen laboral y derechos humanos.",
   },
   {
     id: "q5",
-    prompt: "¿Cuál es el criterio de aprobación del módulo?",
+    prompt: "Si se detecta algún caso de trabajo forzoso, ¿cuál es la orden de la empresa?",
     options: [
-      "3 de 5 respuestas correctas.",
-      "4 de 5 respuestas correctas.",
-      "5 de 5 obligatorio.",
-      "Solo completar sin importar respuestas.",
+      "No se permite y se debe denunciar.",
+      "No decir nada para evitar problemas.",
+      "Permitirlo si el cliente tiene mucha prisa.",
+    ],
+    answer: 0,
+    correctHint: "Correcto: la instrucción es denunciar de inmediato.",
+    wrongHint: "La política exige cero tolerancia y reporte inmediato.",
+  },
+  {
+    id: "q6",
+    prompt: "¿A quiénes se les pide cumplir con estas reglas?",
+    options: [
+      "Solo a los empleados nuevos.",
+      "A la propia empresa y sus empleados, así como también a sus socios comerciales.",
+      "Únicamente a los clientes que compran poco.",
     ],
     answer: 1,
-    correctHint: "El mínimo de aprobación está definido en 4 aciertos de 5.",
-    wrongHint: "El umbral de aprobación oficial en esta versión es 4/5.",
+    correctHint: "Exacto: la política aplica a toda la cadena de valor de TTS.",
+    wrongHint: "No aplica a un grupo pequeño, sino a empresa, personal y socios.",
+  },
+  {
+    id: "q7",
+    prompt: "¿Qué leyes y normas se compromete a seguir TTS?",
+    options: [
+      "Solo las leyes de la ciudad.",
+      "Solo las normas de otros países.",
+      "Todas: locales, estatales, federales e internacionales.",
+    ],
+    answer: 2,
+    correctHint: "Correcto: el compromiso es integral en todos los niveles normativos.",
+    wrongHint: "La política no limita el cumplimiento a una sola jurisdicción.",
   },
 ];
 
@@ -87,10 +105,10 @@ const state = {
   entryBusy: false,
   alreadyCompleted: false,
 
-  policyTimerDone: false,
-  policyScrolledToEnd: false,
-  policySecondsLeft: MIN_POLICY_SECONDS,
-  policyTimerId: null,
+  policyVideoWatched: 0,
+  policyVideoDuration: 0,
+  policyVideoFinished: false,
+  policyVideoStarted: false,
 
   currentQuestion: 0,
   score: 0,
@@ -128,16 +146,18 @@ const refs = {
   welcomeStatus: document.querySelector("#welcomeStatus"),
   goPolicyBtn: document.querySelector("#goPolicyBtn"),
 
-  policyScroll: document.querySelector("#policyScroll"),
+  policyVideo: document.querySelector("#policyVideo"),
+  videoStatus: document.querySelector("#videoStatus"),
   readStatus: document.querySelector("#readStatus"),
   commitCheck: document.querySelector("#commitCheck"),
   acceptBtn: document.querySelector("#acceptBtn"),
 
+  quizProgress: document.querySelector("#quizProgress"),
   quizCounter: document.querySelector("#quizCounter"),
   quizQuestion: document.querySelector("#quizQuestion"),
   quizOptions: document.querySelector("#quizOptions"),
   quizFeedback: document.querySelector("#quizFeedback"),
-  quizProgressSegments: Array.from(document.querySelectorAll("#quizProgress .segment")),
+  quizProgressSegments: [],
   submitAnswerBtn: document.querySelector("#submitAnswerBtn"),
   nextQuestionBtn: document.querySelector("#nextQuestionBtn"),
 
@@ -161,6 +181,7 @@ const refs = {
 
 function init() {
   refs.year.textContent = String(new Date().getFullYear());
+  buildQuizProgressSegments();
   bindEvents();
   preloadBrandAssets();
   seedEntryQr();
@@ -181,14 +202,25 @@ function bindEvents() {
 
   refs.goPolicyBtn.addEventListener("click", () => {
     setActiveStep("policyStep");
-    startPolicyTimer();
-    refs.policyScroll.focus({ preventScroll: true });
+    resetPolicyVideoGate();
+    if (refs.policyVideo) {
+      refs.policyVideo.focus({ preventScroll: true });
+    }
   });
 
-  refs.policyScroll.addEventListener("scroll", handlePolicyScroll);
+  if (refs.policyVideo) {
+    refs.policyVideo.addEventListener("loadedmetadata", handlePolicyVideoLoadedMetadata);
+    refs.policyVideo.addEventListener("timeupdate", handlePolicyVideoTimeUpdate);
+    refs.policyVideo.addEventListener("ended", handlePolicyVideoEnded);
+    refs.policyVideo.addEventListener("seeking", handlePolicyVideoSeeking);
+    refs.policyVideo.addEventListener("play", () => {
+      state.policyVideoStarted = true;
+      updateReadStatus();
+    });
+  }
 
   refs.commitCheck.addEventListener("change", () => {
-    refs.acceptBtn.disabled = !isPolicyReady() || !refs.commitCheck.checked;
+    updateReadStatus();
   });
 
   refs.acceptBtn.addEventListener("click", () => {
@@ -425,68 +457,159 @@ function seedEntryQr() {
   drawBrandQr(refs.entryQr, payload);
 }
 
-function startPolicyTimer() {
-  if (state.policyTimerId) {
+function buildQuizProgressSegments() {
+  if (!refs.quizProgress) {
+    refs.quizProgressSegments = [];
     return;
   }
 
-  state.policyTimerDone = false;
-  state.policyScrolledToEnd = false;
-  state.policySecondsLeft = MIN_POLICY_SECONDS;
+  refs.quizProgress.innerHTML = "";
+  refs.quizProgress.style.setProperty("--segments-count", String(quizQuestions.length));
+  refs.quizProgressSegments = quizQuestions.map(() => {
+    const segment = document.createElement("span");
+    segment.className = "segment";
+    refs.quizProgress.appendChild(segment);
+    return segment;
+  });
+}
+
+function resetPolicyVideoGate() {
+  state.policyVideoWatched = 0;
+  state.policyVideoDuration = refs.policyVideo ? Number(refs.policyVideo.duration || 0) : 0;
+  state.policyVideoFinished = !refs.policyVideo;
+  state.policyVideoStarted = false;
+
   refs.commitCheck.checked = false;
   refs.commitCheck.disabled = true;
   refs.acceptBtn.disabled = true;
-  refs.policyScroll.scrollTop = 0;
+
+  if (refs.policyVideo) {
+    refs.policyVideo.pause();
+    try {
+      refs.policyVideo.currentTime = 0;
+    } catch {
+      // Safari puede bloquear el seek antes de cargar metadata.
+    }
+  }
+
   updateReadStatus();
-
-  state.policyTimerId = window.setInterval(() => {
-    if (state.policySecondsLeft > 0) {
-      state.policySecondsLeft -= 1;
-    }
-
-    if (state.policySecondsLeft === 0) {
-      state.policyTimerDone = true;
-      window.clearInterval(state.policyTimerId);
-      state.policyTimerId = null;
-    }
-
-    updateReadStatus();
-  }, 1000);
 }
 
-function handlePolicyScroll() {
-  const el = refs.policyScroll;
-  const reachedBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
-
-  if (reachedBottom) {
-    state.policyScrolledToEnd = true;
-    updateReadStatus();
+function handlePolicyVideoLoadedMetadata() {
+  if (!refs.policyVideo) {
+    return;
   }
+  state.policyVideoDuration = Number(refs.policyVideo.duration || 0);
+  updateReadStatus();
+}
+
+function handlePolicyVideoTimeUpdate() {
+  if (!refs.policyVideo) {
+    return;
+  }
+
+  const currentTime = Number(refs.policyVideo.currentTime || 0);
+  const duration = Number(refs.policyVideo.duration || state.policyVideoDuration || 0);
+  state.policyVideoDuration = duration;
+
+  if (currentTime > state.policyVideoWatched) {
+    state.policyVideoWatched = currentTime;
+  }
+
+  if (duration > 0 && state.policyVideoWatched >= duration - 0.35) {
+    state.policyVideoFinished = true;
+  }
+
+  updateReadStatus();
+}
+
+function handlePolicyVideoSeeking() {
+  if (!refs.policyVideo || state.policyVideoFinished) {
+    return;
+  }
+
+  const allowedTime = Math.max(0, state.policyVideoWatched + 1);
+  const targetTime = Number(refs.policyVideo.currentTime || 0);
+  if (targetTime <= allowedTime) {
+    return;
+  }
+
+  refs.policyVideo.currentTime = allowedTime;
+  refs.readStatus.textContent = "Para continuar debes ver el video completo sin adelantar.";
+}
+
+function handlePolicyVideoEnded() {
+  if (!refs.policyVideo) {
+    return;
+  }
+
+  state.policyVideoDuration = Number(refs.policyVideo.duration || state.policyVideoDuration || 0);
+  state.policyVideoWatched = state.policyVideoDuration;
+  state.policyVideoFinished = true;
+  updateReadStatus();
+}
+
+function getPolicyVideoProgressPercent() {
+  if (state.policyVideoFinished) {
+    return 100;
+  }
+
+  if (!state.policyVideoDuration || state.policyVideoDuration <= 0) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.min(100, Math.round((state.policyVideoWatched / state.policyVideoDuration) * 100))
+  );
 }
 
 function isPolicyReady() {
-  return state.policyTimerDone && state.policyScrolledToEnd;
+  return state.policyVideoFinished;
 }
 
 function updateReadStatus() {
-  const scrollText = state.policyScrolledToEnd
-    ? "Lectura completa registrada."
-    : "Desplázate hasta el final del documento.";
-
-  const timerText = state.policyTimerDone
-    ? "Tiempo mínimo cumplido."
-    : `Tiempo restante: ${state.policySecondsLeft}s.`;
-
-  refs.readStatus.textContent = `${scrollText} ${timerText}`;
-
+  const progressPercent = getPolicyVideoProgressPercent();
   const ready = isPolicyReady();
+
+  if (ready) {
+    refs.readStatus.textContent =
+      "Video completado al 100%. Marca la casilla y acepta para continuar.";
+    if (refs.videoStatus) {
+      refs.videoStatus.textContent = "Video completado. Puedes continuar al quiz.";
+      refs.videoStatus.classList.add("done");
+    }
+  } else {
+    const statusPrefix = state.policyVideoStarted
+      ? `Avance de video: ${progressPercent}%.`
+      : "Inicia el video oficial.";
+    refs.readStatus.textContent = `${statusPrefix} Debes terminarlo para continuar.`;
+    if (refs.videoStatus) {
+      refs.videoStatus.textContent = `Avance actual: ${progressPercent}% (requisito: 100%).`;
+      refs.videoStatus.classList.remove("done");
+    }
+  }
+
   refs.commitCheck.disabled = !ready;
+  if (!ready) {
+    refs.commitCheck.checked = false;
+  }
   refs.acceptBtn.disabled = !ready || !refs.commitCheck.checked;
 }
 
 async function handlePolicyAcceptance() {
   if (!state.userId) {
     refs.readStatus.textContent = "No hay usuario activo. Regresa al inicio.";
+    return;
+  }
+
+  if (!isPolicyReady()) {
+    refs.readStatus.textContent = "Primero completa el video al 100%.";
+    return;
+  }
+
+  if (!refs.commitCheck.checked) {
+    refs.readStatus.textContent = "Marca la casilla de compromiso para continuar.";
     return;
   }
 
@@ -624,10 +747,14 @@ async function showResult() {
 
     state.passed = Boolean(payload.passed);
     state.employeeStatus = payload.estado || state.employeeStatus;
+    const passingScore = Number.isFinite(Number(payload.passing_score))
+      ? Number(payload.passing_score)
+      : PASSING_SCORE;
 
     if (state.passed) {
       refs.resultStatus.classList.add("pass");
-      refs.resultStatus.textContent = "Aprobado: cumples el criterio mínimo (4/5).";
+      refs.resultStatus.textContent =
+        `Aprobado: cumples el criterio mínimo (${passingScore}/${quizQuestions.length}).`;
       refs.generateCertBtn.classList.remove("hidden");
       return;
     }
