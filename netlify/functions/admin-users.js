@@ -1,13 +1,17 @@
 const {
+  RECOGNITION_BUCKET,
   STATUS,
   json,
+  parseBody,
   getSupabaseAdmin,
   requireAdmin,
   getProgressMap,
+  nowIso,
+  logAudit,
 } = require("./_lib/common");
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== "GET") {
+  if (event.httpMethod !== "GET" && event.httpMethod !== "DELETE") {
     return json(405, { error: "Method not allowed" });
   }
 
@@ -17,11 +21,88 @@ exports.handler = async (event) => {
   }
 
   try {
+    const supabase = getSupabaseAdmin();
+
+    if (event.httpMethod === "DELETE") {
+      const body = parseBody(event);
+      const userId = String(event.queryStringParameters?.user_id || body.user_id || "").trim();
+
+      if (!userId) {
+        return json(400, { error: "'user_id' is required" });
+      }
+
+      const { data: user, error: userError } = await supabase
+        .from("usuarios")
+        .select("id,nombre,codigo_interno")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (userError) {
+        return json(500, { error: userError.message });
+      }
+
+      if (!user) {
+        return json(404, { error: "User not found" });
+      }
+
+      const { data: recognitionRows, error: recognitionError } = await supabase
+        .from("reconocimientos")
+        .select("id,file_path,folio")
+        .eq("usuario_id", userId);
+
+      if (recognitionError) {
+        return json(500, { error: recognitionError.message });
+      }
+
+      const filePaths = (recognitionRows || [])
+        .map((row) => String(row.file_path || "").trim())
+        .filter(Boolean);
+
+      let storageWarning = "";
+      if (filePaths.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from(RECOGNITION_BUCKET)
+          .remove(filePaths);
+
+        if (storageError) {
+          storageWarning = storageError.message || "No fue posible limpiar todos los archivos del bucket.";
+        }
+      }
+
+      await logAudit(supabase, {
+        usuarioId: userId,
+        actor: "ADMIN",
+        action: "USER_DELETED",
+        metadata: {
+          deleted_user_id: userId,
+          nombre: user.nombre || null,
+          codigo_interno: user.codigo_interno || null,
+          removed_recognition_files: filePaths.length,
+          storage_warning: storageWarning || null,
+          deleted_at: nowIso(),
+        },
+      });
+
+      const { error: deleteError } = await supabase.from("usuarios").delete().eq("id", userId);
+      if (deleteError) {
+        return json(500, { error: deleteError.message });
+      }
+
+      return json(200, {
+        ok: true,
+        user: {
+          id: user.id,
+          nombre: user.nombre || null,
+          codigo_interno: user.codigo_interno || null,
+        },
+        removed_recognition_files: filePaths.length,
+        warning: storageWarning || null,
+      });
+    }
+
     const desiredStatus = String(event.queryStringParameters?.status || "ALL")
       .toUpperCase()
       .trim();
-
-    const supabase = getSupabaseAdmin();
 
     const { data: users, error: usersError } = await supabase
       .from("usuarios")

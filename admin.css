@@ -312,6 +312,17 @@ th {
   opacity: 0.5;
 }
 
+.small-btn-danger {
+  border-color: #e1b1ae;
+  color: #812f2c;
+  background: #fbeceb;
+}
+
+.small-btn-danger:hover:not(:disabled) {
+  border-color: #d2817d;
+  background: #f8dddb;
+}
+
 .hidden {
   display: none !important;
 }

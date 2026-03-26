@@ -183,6 +183,7 @@ function renderUsers() {
       const folioText = row.recognition_folio || "-";
       const code = row.codigo_interno || "-";
       const area = row.area || "-";
+      const userId = row.id || "";
       const recognitionBtnDisabled = row.recognition_id ? "" : "disabled";
 
       return `
@@ -199,6 +200,15 @@ function renderUsers() {
               <button class="small-btn" data-action="download-one" data-recognition-id="${row.recognition_id || ""}" ${recognitionBtnDisabled}>
                 Descargar
               </button>
+              <button
+                class="small-btn small-btn-danger"
+                data-action="delete-user"
+                data-user-id="${escapeHtml(userId)}"
+                data-user-name="${escapeHtml(row.nombre || "")}"
+                data-user-code="${escapeHtml(code)}"
+              >
+                Eliminar
+              </button>
             </div>
           </td>
         </tr>
@@ -211,6 +221,16 @@ function renderUsers() {
       const recognitionId = button.getAttribute("data-recognition-id");
       if (!recognitionId) return;
       await downloadOne(recognitionId, button);
+    });
+  });
+
+  refs.usersTableBody.querySelectorAll("[data-action='delete-user']").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const userId = button.getAttribute("data-user-id");
+      const userName = button.getAttribute("data-user-name");
+      const userCode = button.getAttribute("data-user-code");
+      if (!userId) return;
+      await deleteUser(userId, userName, userCode, button);
     });
   });
 }
@@ -318,6 +338,42 @@ async function downloadOne(recognitionId, triggerButton) {
       pendingWindow.close();
     }
     setAdminMessage(`Error al descargar reconocimiento: ${err.message}`);
+  } finally {
+    if (triggerButton) {
+      triggerButton.disabled = false;
+      triggerButton.textContent = originalText;
+    }
+  }
+}
+
+async function deleteUser(userId, userName, userCode, triggerButton) {
+  const safeName = String(userName || "este colaborador").trim() || "este colaborador";
+  const safeCode = String(userCode || "").trim();
+  const label = safeCode && safeCode !== "-" ? `${safeName} (${safeCode})` : safeName;
+  const confirmed = window.confirm(
+    `¿Seguro que deseas eliminar a ${label}? Esta acción borrará su progreso, intentos y reconocimientos vinculados.`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  const originalText = triggerButton ? triggerButton.textContent : "Eliminar";
+  if (triggerButton) {
+    triggerButton.disabled = true;
+    triggerButton.textContent = "Eliminando...";
+  }
+
+  try {
+    setAdminMessage(`Eliminando usuario ${label}...`);
+    const data = await apiRequest(`/api/admin/users?user_id=${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    });
+    const warningSuffix = data.warning ? ` Aviso: ${data.warning}` : "";
+    setAdminMessage(`Usuario eliminado correctamente.${warningSuffix}`);
+    await refreshAll();
+  } catch (err) {
+    setAdminMessage(`Error al eliminar usuario: ${err.message}`);
   } finally {
     if (triggerButton) {
       triggerButton.disabled = false;

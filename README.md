@@ -67,6 +67,7 @@ node --check admin.js
 - `POST /api/users` (admin key requerida)
 - `GET /api/admin/overview` (admin key requerida)
 - `GET /api/admin/users?status=ALL|PENDIENTE|EN_PROCESO|COMPLETADO|NO_APROBADO` (admin key requerida)
+- `DELETE /api/admin/users?user_id=UUID` (admin key requerida)
 - `POST /api/session/start`
 - `POST /api/policy/accept`
 - `POST /api/quiz/submit`
