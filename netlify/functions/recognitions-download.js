@@ -5,6 +5,30 @@ const {
   createSignedDownloadUrl,
 } = require("./_lib/common");
 
+function extractRecognitionId(event) {
+  const queryId = String(event?.queryStringParameters?.id || "").trim();
+  if (queryId) {
+    return queryId;
+  }
+
+  const pathParamId = String(event?.pathParameters?.id || "").trim();
+  if (pathParamId) {
+    return pathParamId;
+  }
+
+  const rawPath = String(event?.path || event?.rawUrl || "").trim();
+  const match = rawPath.match(/\/api\/recognitions\/([^/]+)\/download/i);
+  if (match && match[1]) {
+    try {
+      return decodeURIComponent(match[1]).trim();
+    } catch {
+      return String(match[1]).trim();
+    }
+  }
+
+  return "";
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "GET") {
     return json(405, { error: "Method not allowed" });
@@ -16,7 +40,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const id = String(event.queryStringParameters?.id || "").trim();
+    const id = extractRecognitionId(event);
 
     if (!id) {
       return json(400, { error: "Recognition id is required" });

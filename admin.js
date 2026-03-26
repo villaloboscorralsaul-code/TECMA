@@ -184,7 +184,8 @@ function renderUsers() {
       const code = row.codigo_interno || "-";
       const area = row.area || "-";
       const userId = row.id || "";
-      const recognitionBtnDisabled = row.recognition_id ? "" : "disabled";
+      const recognitionId = normalizeRecognitionId(row.recognition_id);
+      const recognitionBtnDisabled = recognitionId ? "" : "disabled";
 
       return `
         <tr>
@@ -197,7 +198,7 @@ function renderUsers() {
           <td>${escapeHtml(folioText)}</td>
           <td>
             <div class="actions">
-              <button class="small-btn" data-action="download-one" data-recognition-id="${row.recognition_id || ""}" ${recognitionBtnDisabled}>
+              <button class="small-btn" data-action="download-one" data-recognition-id="${recognitionId}" ${recognitionBtnDisabled}>
                 Descargar
               </button>
               <button
@@ -218,7 +219,7 @@ function renderUsers() {
 
   refs.usersTableBody.querySelectorAll("[data-action='download-one']").forEach((button) => {
     button.addEventListener("click", async () => {
-      const recognitionId = button.getAttribute("data-recognition-id");
+      const recognitionId = normalizeRecognitionId(button.getAttribute("data-recognition-id"));
       if (!recognitionId) return;
       await downloadOne(recognitionId, button);
     });
@@ -305,6 +306,12 @@ async function createUser() {
 }
 
 async function downloadOne(recognitionId, triggerButton) {
+  const safeRecognitionId = normalizeRecognitionId(recognitionId);
+  if (!safeRecognitionId) {
+    setAdminMessage("El reconocimiento seleccionado no tiene un ID válido para descargar.");
+    return;
+  }
+
   const originalText = triggerButton ? triggerButton.textContent : "Descargar";
   let pendingWindow = null;
 
@@ -321,7 +328,7 @@ async function downloadOne(recognitionId, triggerButton) {
 
   try {
     setAdminMessage("Generando enlace de descarga...");
-    const data = await apiRequest(`/api/recognitions/${encodeURIComponent(recognitionId)}/download`);
+    const data = await apiRequest(`/api/recognitions/${encodeURIComponent(safeRecognitionId)}/download`);
     if (!data.download_url) {
       throw new Error("No se recibió URL de descarga.");
     }
@@ -344,6 +351,14 @@ async function downloadOne(recognitionId, triggerButton) {
       triggerButton.textContent = originalText;
     }
   }
+}
+
+function normalizeRecognitionId(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "";
+  const lower = normalized.toLowerCase();
+  if (lower === "null" || lower === "undefined") return "";
+  return normalized;
 }
 
 async function deleteUser(userId, userName, userCode, triggerButton) {
