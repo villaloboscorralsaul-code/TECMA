@@ -112,6 +112,8 @@ exports.handler = async (event) => {
       return json(404, { error: "Recognition not found" });
     }
 
+    let freshPdfBuffer = null;
+
     if (refresh) {
       const { data: user, error: userError } = await supabase
         .from("usuarios")
@@ -148,10 +150,11 @@ exports.handler = async (event) => {
         photoDataUrl: recognition.photo_data_url || "",
         legacyPdfBytes,
       });
+      freshPdfBuffer = Buffer.from(refreshedPdf);
 
       const { error: refreshUploadError } = await supabase.storage
         .from(RECOGNITION_BUCKET)
-        .upload(recognition.file_path, Buffer.from(refreshedPdf), {
+        .upload(recognition.file_path, freshPdfBuffer, {
           contentType: "application/pdf",
           upsert: true,
         });
@@ -164,6 +167,19 @@ exports.handler = async (event) => {
     const safeFolio = normalizeRecognitionFolio(recognition.folio);
 
     if (directDownload) {
+      if (freshPdfBuffer) {
+        return {
+          statusCode: 200,
+          headers: {
+            "content-type": "application/pdf",
+            "content-disposition": `attachment; filename="${safeFolio || "reconocimiento"}.pdf"`,
+            "cache-control": "no-store",
+          },
+          isBase64Encoded: true,
+          body: freshPdfBuffer.toString("base64"),
+        };
+      }
+
       const { data: fileData, error: fileError } = await supabase.storage
         .from(RECOGNITION_BUCKET)
         .download(recognition.file_path);

@@ -103,6 +103,7 @@ exports.handler = async (event) => {
     const zip = new JSZip();
 
     for (const recognition of recognitionRows) {
+      let outputBuffer = null;
       let fileData = null;
       let fileError = null;
 
@@ -134,15 +135,10 @@ exports.handler = async (event) => {
             error: `No se pudo actualizar el reconocimiento ${recognition.folio}: ${refreshUploadError.message}`,
           });
         }
-
-        const refreshedDownload = await supabase.storage
-          .from(RECOGNITION_BUCKET)
-          .download(recognition.file_path);
-        fileData = refreshedDownload.data;
-        fileError = refreshedDownload.error;
+        outputBuffer = Buffer.from(refreshedPdf);
       }
 
-      if (fileError || !fileData) {
+      if (!outputBuffer && (fileError || !fileData)) {
         continue;
       }
 
@@ -150,7 +146,7 @@ exports.handler = async (event) => {
       const safeName = slugify(employeeName) || "usuario";
       const safeFolio = normalizeRecognitionFolio(recognition.folio) || recognition.folio;
       const filename = `${safeFolio}-${safeName}.pdf`;
-      const buffer = Buffer.from(await fileData.arrayBuffer());
+      const buffer = outputBuffer || Buffer.from(await fileData.arrayBuffer());
 
       zip.file(filename, buffer);
     }
