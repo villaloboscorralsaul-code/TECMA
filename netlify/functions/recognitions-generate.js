@@ -158,7 +158,10 @@ function drawCenteredTextInBox(page, text, { font, size, color, x, width, y }) {
 }
 
 function drawFlagPill(page, { x, y, label, type, font, textColor, width = 48, height = 20, textSize = 8.2 }) {
-  const stripeWidth = width / 3;
+  const radius = height / 2;
+  const innerX = x + radius;
+  const innerWidth = Math.max(width - radius * 2, 0.01);
+  const stripeWidth = innerWidth / 3;
 
   let left = rgb(0.0, 0.41, 0.28);
   let center = rgb(1, 1, 1);
@@ -176,34 +179,65 @@ function drawFlagPill(page, { x, y, label, type, font, textColor, width = 48, he
     right = rgb(0.81, 0.24, 0.21);
   }
 
+  page.drawCircle({
+    x: x + radius,
+    y: y + radius,
+    size: radius,
+    color: left,
+  });
+  page.drawCircle({
+    x: x + width - radius,
+    y: y + radius,
+    size: radius,
+    color: right,
+  });
   page.drawRectangle({
-    x,
+    x: innerX,
     y,
     width: stripeWidth,
     height,
     color: left,
   });
   page.drawRectangle({
-    x: x + stripeWidth,
+    x: innerX + stripeWidth,
     y,
     width: stripeWidth,
     height,
     color: center,
   });
   page.drawRectangle({
-    x: x + stripeWidth * 2,
+    x: innerX + stripeWidth * 2,
     y,
     width: stripeWidth,
     height,
     color: right,
   });
 
-  page.drawRectangle({
-    x,
-    y,
-    width,
-    height,
-    borderColor: rgb(0.78, 0.82, 0.90),
+  const borderColor = rgb(0.78, 0.82, 0.90);
+  page.drawLine({
+    start: { x: x + radius, y: y + height },
+    end: { x: x + width - radius, y: y + height },
+    thickness: 0.8,
+    color: borderColor,
+  });
+  page.drawLine({
+    start: { x: x + radius, y },
+    end: { x: x + width - radius, y },
+    thickness: 0.8,
+    color: borderColor,
+  });
+  page.drawCircle({
+    x: x + radius,
+    y: y + radius,
+    size: radius,
+    borderColor,
+    borderWidth: 0.8,
+  });
+  page.drawCircle({
+    x: x + width - radius,
+    y: y + radius,
+    size: radius,
+    borderColor,
     borderWidth: 0.8,
   });
 
@@ -264,7 +298,7 @@ function fitImageContain(image, maxWidth, maxHeight) {
   };
 }
 
-async function buildRecognitionPdf({
+async function buildRecognitionPdfLegacy({
   employeeName,
   folio,
   issuedAtIso,
@@ -742,6 +776,453 @@ async function buildRecognitionPdf({
       color: rgb(0.29, 0.36, 0.50),
     });
     verifyY -= 11;
+  }
+
+  return pdfDoc.save();
+}
+
+async function buildRecognitionPdf({
+  employeeName,
+  folio,
+  issuedAtIso,
+  score,
+  verifyUrl,
+  photoDataUrl,
+  legacyPdfBytes = null,
+}) {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([612, 792]); // Letter portrait
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  const colors = {
+    white: rgb(1, 1, 1),
+    page: rgb(0.985, 0.989, 0.996),
+    navy: rgb(0.10, 0.17, 0.30),
+    navySoft: rgb(0.19, 0.30, 0.49),
+    orange: rgb(0.95, 0.48, 0.13),
+    line: rgb(0.74, 0.80, 0.89),
+    text: rgb(0.15, 0.22, 0.35),
+    photoBg: rgb(0.96, 0.97, 0.99),
+  };
+
+  const safeEmployeeName = String(employeeName || "COLABORADOR")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 110);
+  const displayFolio = normalizeRecognitionFolio(folio) || folio;
+  const issuedDateLabel = new Intl.DateTimeFormat("es-MX", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(issuedAtIso));
+  void score;
+
+  const logoImage = await embedAssetPng(pdfDoc, "tecma-logo.png");
+  const headerBadgeImage = await embedAssetPng(pdfDoc, "tecma-badge-alt.png");
+  const watermarkImage = await embedAssetPng(pdfDoc, "tecma-badge.png");
+
+  let employeePhoto = null;
+  const parsedImage = parseImageDataUrl(photoDataUrl);
+  if (parsedImage) {
+    try {
+      const imageBytes = Buffer.from(parsedImage.base64, "base64");
+      employeePhoto = parsedImage.mime.includes("png")
+        ? await pdfDoc.embedPng(imageBytes)
+        : await pdfDoc.embedJpg(imageBytes);
+    } catch {
+      employeePhoto = null;
+    }
+  }
+
+  let legacyPhotoSlice = null;
+  if (!employeePhoto && legacyPdfBytes) {
+    try {
+      const legacyDoc = await PDFDocument.load(legacyPdfBytes);
+      const legacyPage = legacyDoc.getPage(0);
+      legacyPhotoSlice = await pdfDoc.embedPage(legacyPage, {
+        left: 441,
+        bottom: 564,
+        right: 541,
+        top: 682,
+      });
+    } catch {
+      legacyPhotoSlice = null;
+    }
+  }
+
+  const doc = { x: 24, y: 24, width: 564, height: 744 };
+  const content = { x: doc.x + 16, y: doc.y + 16, width: doc.width - 32, height: doc.height - 32 };
+
+  page.drawRectangle({ x: 0, y: 0, width: 612, height: 792, color: colors.page });
+  page.drawRectangle({
+    x: doc.x,
+    y: doc.y,
+    width: doc.width,
+    height: doc.height,
+    color: colors.white,
+    borderColor: colors.navy,
+    borderWidth: 1.6,
+  });
+
+  if (watermarkImage) {
+    const markFit = fitImageContain(watermarkImage, 190, 190);
+    page.drawImage(watermarkImage, {
+      x: doc.x + doc.width - markFit.width - 86,
+      y: doc.y + 44,
+      width: markFit.width,
+      height: markFit.height,
+      opacity: 0.06,
+    });
+  }
+
+  const logosTopY = doc.y + doc.height - 18;
+  const logoCard = { x: content.x, y: logosTopY - 68, width: 176, height: 68 };
+  const badgeCard = { x: logoCard.x + logoCard.width + 10, y: logosTopY - 63, width: 60, height: 60 };
+
+  page.drawRectangle({
+    x: logoCard.x,
+    y: logoCard.y,
+    width: logoCard.width,
+    height: logoCard.height,
+    color: colors.white,
+    borderColor: rgb(0.78, 0.82, 0.90),
+    borderWidth: 1,
+  });
+
+  if (logoImage) {
+    const fittedLogo = fitImageContain(logoImage, logoCard.width - 16, logoCard.height - 12);
+    page.drawImage(logoImage, {
+      x: logoCard.x + (logoCard.width - fittedLogo.width) / 2,
+      y: logoCard.y + (logoCard.height - fittedLogo.height) / 2,
+      width: fittedLogo.width,
+      height: fittedLogo.height,
+    });
+  }
+
+  page.drawRectangle({
+    x: badgeCard.x,
+    y: badgeCard.y,
+    width: badgeCard.width,
+    height: badgeCard.height,
+    color: colors.white,
+    borderColor: rgb(0.78, 0.82, 0.90),
+    borderWidth: 1,
+  });
+  if (headerBadgeImage) {
+    const fittedBadge = fitImageContain(headerBadgeImage, badgeCard.width - 10, badgeCard.height - 10);
+    page.drawImage(headerBadgeImage, {
+      x: badgeCard.x + (badgeCard.width - fittedBadge.width) / 2,
+      y: badgeCard.y + (badgeCard.height - fittedBadge.height) / 2,
+      width: fittedBadge.width,
+      height: fittedBadge.height,
+    });
+  }
+
+  const flagsWidth = 3 * 52 + 2 * 8;
+  const flagsX = content.x + content.width - flagsWidth;
+  const flagsY = logosTopY - 40;
+  drawFlagPill(page, {
+    x: flagsX,
+    y: flagsY,
+    label: "MEX",
+    type: "MEX",
+    font: fontBold,
+    textColor: colors.navy,
+    width: 52,
+    height: 24,
+    textSize: 8.6,
+  });
+  drawFlagPill(page, {
+    x: flagsX + 60,
+    y: flagsY,
+    label: "USA",
+    type: "USA",
+    font: fontBold,
+    textColor: colors.navy,
+    width: 52,
+    height: 24,
+    textSize: 8.6,
+  });
+  drawFlagPill(page, {
+    x: flagsX + 120,
+    y: flagsY,
+    label: "CAN",
+    type: "CAN",
+    font: fontBold,
+    textColor: colors.navy,
+    width: 52,
+    height: 24,
+    textSize: 8.6,
+  });
+
+  drawCenteredText(page, "RECONOCIMIENTO DE CUMPLIMIENTO DE POLÍTICA SOCIAL T-MEC", {
+    font: fontBold,
+    size: 18,
+    color: rgb(0.82, 0.44, 0.12),
+    y: logosTopY - 103,
+  });
+
+  const photoCard = { x: content.x + content.width - 140, y: 416, width: 140, height: 218 };
+  page.drawRectangle({
+    x: photoCard.x,
+    y: photoCard.y,
+    width: photoCard.width,
+    height: photoCard.height,
+    color: colors.photoBg,
+    borderColor: colors.line,
+    borderWidth: 1.1,
+  });
+
+  drawFlagPill(page, {
+    x: photoCard.x + 12,
+    y: photoCard.y + photoCard.height - 33,
+    label: "MEX",
+    type: "MEX",
+    font: fontBold,
+    textColor: colors.navy,
+    width: 34,
+    height: 20,
+    textSize: 7.4,
+  });
+  drawFlagPill(page, {
+    x: photoCard.x + 52,
+    y: photoCard.y + photoCard.height - 33,
+    label: "USA",
+    type: "USA",
+    font: fontBold,
+    textColor: colors.navy,
+    width: 34,
+    height: 20,
+    textSize: 7.4,
+  });
+  drawFlagPill(page, {
+    x: photoCard.x + 92,
+    y: photoCard.y + photoCard.height - 33,
+    label: "CAN",
+    type: "CAN",
+    font: fontBold,
+    textColor: colors.navy,
+    width: 34,
+    height: 20,
+    textSize: 7.4,
+  });
+
+  const photoFrame = { x: photoCard.x + 16, y: photoCard.y + 58, width: 108, height: 132 };
+  page.drawRectangle({
+    x: photoFrame.x,
+    y: photoFrame.y,
+    width: photoFrame.width,
+    height: photoFrame.height,
+    borderColor: colors.navy,
+    borderWidth: 2,
+  });
+
+  if (employeePhoto) {
+    const fittedPhoto = fitImageContain(employeePhoto, photoFrame.width - 8, photoFrame.height - 8);
+    page.drawImage(employeePhoto, {
+      x: photoFrame.x + (photoFrame.width - fittedPhoto.width) / 2,
+      y: photoFrame.y + (photoFrame.height - fittedPhoto.height) / 2,
+      width: fittedPhoto.width,
+      height: fittedPhoto.height,
+    });
+  } else if (legacyPhotoSlice) {
+    page.drawPage(legacyPhotoSlice, {
+      x: photoFrame.x + 4,
+      y: photoFrame.y + 4,
+      width: photoFrame.width - 8,
+      height: photoFrame.height - 8,
+    });
+  } else {
+    page.drawRectangle({
+      x: photoFrame.x + 4,
+      y: photoFrame.y + 4,
+      width: photoFrame.width - 8,
+      height: photoFrame.height - 8,
+      color: rgb(0.90, 0.92, 0.97),
+    });
+    drawCenteredTextInBox(page, "SIN FOTO", {
+      font: fontBold,
+      size: 12,
+      color: colors.navySoft,
+      x: photoFrame.x,
+      width: photoFrame.width,
+      y: photoFrame.y + photoFrame.height / 2 - 6,
+    });
+  }
+
+  drawCenteredTextInBox(page, "FOTOGRAFÍA DEL COLABORADOR", {
+    font: fontBold,
+    size: 8.2,
+    color: rgb(0.27, 0.35, 0.52),
+    x: photoCard.x,
+    width: photoCard.width,
+    y: photoCard.y + 13,
+  });
+
+  const bodyText = `Por medio del presente se reconoce que ${safeEmployeeName}, colaborador(a) de TECMA Transportation Services S. de R.L. de C.V., realizó la lectura del documento y la visualización del video correspondiente a la Política Social, como parte de las actividades internas de difusión, conocimiento y fortalecimiento de la cultura de cumplimiento de la empresa con especial énfasis en la prevención del Trabajo Forzado e Infantil, en cumplimiento con el Capítulo 23 del Tratado del T-MEC.`;
+  const textX = content.x;
+  const textWidth = photoCard.x - textX - 16;
+  const textLines = wrapText(fontRegular, bodyText, 12, textWidth);
+  let textY = logosTopY - 155;
+  for (const line of textLines.slice(0, 14)) {
+    page.drawText(line, {
+      x: textX,
+      y: textY,
+      size: 12,
+      font: fontRegular,
+      color: colors.text,
+    });
+    textY -= 16.5;
+  }
+
+  drawDashedLine(page, {
+    x1: content.x,
+    x2: content.x + content.width,
+    y: 348,
+    color: colors.line,
+    thickness: 1.1,
+  });
+
+  page.drawText("Fecha de finalización:", {
+    x: content.x,
+    y: 318,
+    size: 11.8,
+    font: fontBold,
+    color: colors.navy,
+  });
+  page.drawText(issuedDateLabel, {
+    x: content.x + 138,
+    y: 318,
+    size: 11.8,
+    font: fontRegular,
+    color: colors.text,
+  });
+
+  page.drawText("Folio:", {
+    x: content.x,
+    y: 284,
+    size: 11.8,
+    font: fontBold,
+    color: colors.navy,
+  });
+  page.drawText(displayFolio, {
+    x: content.x + 42,
+    y: 284,
+    size: 11.8,
+    font: fontRegular,
+    color: colors.text,
+  });
+
+  page.drawLine({
+    start: { x: content.x, y: 206 },
+    end: { x: content.x + 180, y: 206 },
+    thickness: 1.2,
+    color: colors.navySoft,
+  });
+  page.drawText("Comité de Cumplimiento Social T-MEC", {
+    x: content.x,
+    y: 183,
+    size: 10.6,
+    font: fontRegular,
+    color: colors.text,
+  });
+
+  const rightSigX = content.x + 260;
+  page.drawLine({
+    start: { x: rightSigX, y: 206 },
+    end: { x: rightSigX + 190, y: 206 },
+    thickness: 1.2,
+    color: colors.navySoft,
+  });
+  page.drawText("GEORGINA SÁNCHEZ", {
+    x: rightSigX,
+    y: 183,
+    size: 10.6,
+    font: fontRegular,
+    color: colors.text,
+  });
+  page.drawText("Representante Legal", {
+    x: rightSigX,
+    y: 164,
+    size: 10.6,
+    font: fontRegular,
+    color: colors.text,
+  });
+
+  page.drawLine({
+    start: { x: content.x, y: 126 },
+    end: { x: content.x + content.width, y: 126 },
+    thickness: 0.9,
+    color: colors.line,
+  });
+
+  const timelineY = 56;
+  const dotsX = [content.x + 10, content.x + 90, content.x + 170];
+  const dotColors = [rgb(0.04, 0.47, 0.34), rgb(0.20, 0.30, 0.56), rgb(0.84, 0.23, 0.20)];
+  dotsX.forEach((dotX, idx) => {
+    page.drawCircle({
+      x: dotX,
+      y: timelineY,
+      size: 7,
+      color: dotColors[idx],
+      borderColor: rgb(0, 0, 0),
+      borderWidth: 0.3,
+    });
+    if (idx < dotsX.length - 1) {
+      page.drawLine({
+        start: { x: dotX + 10, y: timelineY },
+        end: { x: dotsX[idx + 1] - 10, y: timelineY },
+        thickness: 3,
+        color: colors.line,
+      });
+      page.drawLine({
+        start: { x: dotX + 10, y: timelineY },
+        end: { x: dotsX[idx + 1] - 10, y: timelineY },
+        thickness: 1.6,
+        color: dotColors[idx],
+      });
+    }
+  });
+
+  const qrX = content.x + 220;
+  const qrY = 36;
+  const verifyQrImage = await buildVerifyQrImage(pdfDoc, verifyUrl);
+  if (verifyQrImage) {
+    page.drawImage(verifyQrImage, {
+      x: qrX,
+      y: qrY,
+      width: 74,
+      height: 74,
+    });
+  }
+  page.drawRectangle({
+    x: qrX,
+    y: qrY,
+    width: 74,
+    height: 74,
+    borderColor: colors.navy,
+    borderWidth: 1,
+  });
+
+  page.drawText("Verificación:", {
+    x: qrX + 82,
+    y: qrY + 58,
+    size: 8.4,
+    font: fontRegular,
+    color: rgb(0.29, 0.36, 0.50),
+  });
+  const verifyLines = wrapText(fontRegular, verifyUrl, 8, 190);
+  let verifyY = qrY + 45;
+  for (const line of verifyLines.slice(0, 4)) {
+    page.drawText(line, {
+      x: qrX + 82,
+      y: verifyY,
+      size: 8,
+      font: fontRegular,
+      color: rgb(0.29, 0.36, 0.50),
+    });
+    verifyY -= 10;
   }
 
   return pdfDoc.save();
