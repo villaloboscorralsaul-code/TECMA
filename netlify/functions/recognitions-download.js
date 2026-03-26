@@ -89,7 +89,7 @@ exports.handler = async (event) => {
   try {
     const id = extractRecognitionId(event);
     const folio = String(event?.queryStringParameters?.folio || "").trim();
-    const refresh = String(event?.queryStringParameters?.refresh || "1").trim() !== "0";
+    const refresh = true;
 
     if (!id && !folio) {
       return json(400, { error: "Recognition id is required" });
@@ -108,45 +108,51 @@ exports.handler = async (event) => {
     }
 
     if (refresh) {
+      const { data: user, error: userError } = await supabase
+        .from("usuarios")
+        .select("id,nombre")
+        .eq("id", recognition.usuario_id)
+        .maybeSingle();
+
+      if (userError) {
+        return json(500, { error: userError.message });
+      }
+
+      if (!user) {
+        return json(404, { error: "User not found for this recognition" });
+      }
+
+      let legacyPdfBytes = null;
       try {
-        const { data: user, error: userError } = await supabase
-          .from("usuarios")
-          .select("id,nombre")
-          .eq("id", recognition.usuario_id)
-          .maybeSingle();
-
-        if (!userError && user) {
-          let legacyPdfBytes = null;
-          try {
-            const legacyFile = await supabase.storage
-              .from(RECOGNITION_BUCKET)
-              .download(recognition.file_path);
-            if (legacyFile.data) {
-              legacyPdfBytes = Buffer.from(await legacyFile.data.arrayBuffer());
-            }
-          } catch {
-            legacyPdfBytes = null;
-          }
-
-          const refreshedPdf = await buildRecognitionPdf({
-            employeeName: user.nombre,
-            folio: recognition.folio,
-            issuedAtIso: recognition.issued_at || new Date().toISOString(),
-            score: Number.isFinite(Number(recognition.score)) ? Number(recognition.score) : null,
-            verifyUrl: getVerifyUrl(recognition.verify_token),
-            photoDataUrl: recognition.photo_data_url || "",
-            legacyPdfBytes,
-          });
-
-          await supabase.storage
-            .from(RECOGNITION_BUCKET)
-            .upload(recognition.file_path, Buffer.from(refreshedPdf), {
-              contentType: "application/pdf",
-              upsert: true,
-            });
+        const legacyFile = await supabase.storage
+          .from(RECOGNITION_BUCKET)
+          .download(recognition.file_path);
+        if (legacyFile.data) {
+          legacyPdfBytes = Buffer.from(await legacyFile.data.arrayBuffer());
         }
       } catch {
-        // Si falla la regeneración, se usa el archivo previo para no romper descarga.
+        legacyPdfBytes = null;
+      }
+
+      const refreshedPdf = await buildRecognitionPdf({
+        employeeName: user.nombre,
+        folio: recognition.folio,
+        issuedAtIso: recognition.issued_at || new Date().toISOString(),
+        score: Number.isFinite(Number(recognition.score)) ? Number(recognition.score) : null,
+        verifyUrl: getVerifyUrl(recognition.verify_token),
+        photoDataUrl: recognition.photo_data_url || "",
+        legacyPdfBytes,
+      });
+
+      const { error: refreshUploadError } = await supabase.storage
+        .from(RECOGNITION_BUCKET)
+        .upload(recognition.file_path, Buffer.from(refreshedPdf), {
+          contentType: "application/pdf",
+          upsert: true,
+        });
+
+      if (refreshUploadError) {
+        return json(500, { error: refreshUploadError.message });
       }
     }
 

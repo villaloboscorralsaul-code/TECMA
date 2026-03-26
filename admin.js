@@ -341,9 +341,7 @@ async function downloadOne(recognitionId, recognitionFolio, triggerButton) {
     const folioQuery = safeRecognitionFolio
       ? `&folio=${encodeURIComponent(safeRecognitionFolio)}`
       : "";
-    const data = await apiRequest(
-      `/api/recognitions/${encodeURIComponent(routeId)}/download?refresh=1${folioQuery}`
-    );
+    const data = await apiRequest(`/api/recognitions/${encodeURIComponent(routeId)}/download${folioQuery}`);
     if (!data.download_url) {
       throw new Error("No se recibió URL de descarga.");
     }
@@ -418,7 +416,7 @@ async function downloadZip() {
     refs.downloadZipBtn.textContent = "Abriendo descarga...";
     setAdminMessage("Se abrirá una pestaña para preparar el ZIP.");
 
-    const zipUrl = buildApiUrl("/api/recognitions/export-zip?refresh=1");
+    const zipUrl = buildApiUrl("/api/recognitions/export-zip");
     openDownloadUrl(zipUrl);
   } catch (err) {
     setAdminMessage(`Error ZIP: ${err.message}`);

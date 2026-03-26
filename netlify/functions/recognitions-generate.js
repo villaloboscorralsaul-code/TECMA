@@ -928,6 +928,13 @@ exports.handler = async (event) => {
         return json(500, { error: refreshProgressError.message });
       }
 
+      if (photoDataUrl) {
+        await supabase
+          .from("reconocimientos")
+          .update({ photo_data_url: photoDataUrl })
+          .eq("id", existingRecognition.id);
+      }
+
       await logAudit(supabase, {
         usuarioId: userId,
         actor: "SYSTEM",

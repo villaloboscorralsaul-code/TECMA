@@ -55,7 +55,7 @@ exports.handler = async (event) => {
 
   try {
     const supabase = getSupabaseAdmin();
-    const refresh = String(event.queryStringParameters?.refresh || "1").trim() !== "0";
+    const refresh = true;
 
     const { data: progressRows, error: progressError } = await supabase
       .from("progreso_test")
@@ -107,33 +107,35 @@ exports.handler = async (event) => {
       fileError = downloaded.error;
 
       if (refresh && !fileError) {
-        try {
-          const legacyPdfBytes = fileData ? Buffer.from(await fileData.arrayBuffer()) : null;
-          const refreshedPdf = await buildRecognitionPdf({
-            employeeName: userMap.get(recognition.usuario_id) || "Colaborador",
-            folio: recognition.folio,
-            issuedAtIso: recognition.issued_at || new Date().toISOString(),
-            score: Number.isFinite(Number(recognition.score)) ? Number(recognition.score) : null,
-            verifyUrl: getVerifyUrl(recognition.verify_token),
-            photoDataUrl: recognition.photo_data_url || "",
-            legacyPdfBytes,
+        const legacyPdfBytes = fileData ? Buffer.from(await fileData.arrayBuffer()) : null;
+        const refreshedPdf = await buildRecognitionPdf({
+          employeeName: userMap.get(recognition.usuario_id) || "Colaborador",
+          folio: recognition.folio,
+          issuedAtIso: recognition.issued_at || new Date().toISOString(),
+          score: Number.isFinite(Number(recognition.score)) ? Number(recognition.score) : null,
+          verifyUrl: getVerifyUrl(recognition.verify_token),
+          photoDataUrl: recognition.photo_data_url || "",
+          legacyPdfBytes,
+        });
+
+        const { error: refreshUploadError } = await supabase.storage
+          .from(RECOGNITION_BUCKET)
+          .upload(recognition.file_path, Buffer.from(refreshedPdf), {
+            contentType: "application/pdf",
+            upsert: true,
           });
 
-          await supabase.storage
-            .from(RECOGNITION_BUCKET)
-            .upload(recognition.file_path, Buffer.from(refreshedPdf), {
-              contentType: "application/pdf",
-              upsert: true,
-            });
-
-          const refreshedDownload = await supabase.storage
-            .from(RECOGNITION_BUCKET)
-            .download(recognition.file_path);
-          fileData = refreshedDownload.data;
-          fileError = refreshedDownload.error;
-        } catch {
-          // Mantén el archivo previo si falla la regeneración.
+        if (refreshUploadError) {
+          return json(500, {
+            error: `No se pudo actualizar el reconocimiento ${recognition.folio}: ${refreshUploadError.message}`,
+          });
         }
+
+        const refreshedDownload = await supabase.storage
+          .from(RECOGNITION_BUCKET)
+          .download(recognition.file_path);
+        fileData = refreshedDownload.data;
+        fileError = refreshedDownload.error;
       }
 
       if (fileError || !fileData) {
