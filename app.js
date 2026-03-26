@@ -1060,11 +1060,6 @@ function cacheRecognitionRecord() {
 }
 
 function handleDownloadRecognition() {
-  if (state.recognitionDownloadUrl) {
-    window.open(state.recognitionDownloadUrl, "_blank", "noopener,noreferrer");
-    return;
-  }
-
   window.print();
 }
 

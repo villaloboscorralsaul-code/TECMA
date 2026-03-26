@@ -166,21 +166,142 @@ async function createSignedDownloadUrl(supabase, filePath, expiresInSeconds = 60
   return data.signedUrl;
 }
 
+function isMissingColumnError(error, columnName = "recognition_id") {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("does not exist") && message.includes(String(columnName).toLowerCase());
+}
+
+function appendRecognitionField(fields) {
+  const safeFields = Array.isArray(fields)
+    ? fields.map((field) => String(field || "").trim()).filter(Boolean)
+    : String(fields || "")
+        .split(",")
+        .map((field) => field.trim())
+        .filter(Boolean);
+
+  if (!safeFields.includes("recognition_id")) {
+    safeFields.push("recognition_id");
+  }
+
+  return safeFields;
+}
+
+async function fetchProgressByUser(supabase, userId, fields = ["estado"]) {
+  const selectedFields = appendRecognitionField(fields);
+  const withRecognition = selectedFields.join(",");
+
+  const initial = await supabase
+    .from("progreso_test")
+    .select(withRecognition)
+    .eq("usuario_id", userId)
+    .maybeSingle();
+
+  if (!initial.error) {
+    return {
+      data: initial.data || null,
+      error: null,
+      hasRecognitionColumn: true,
+    };
+  }
+
+  if (!isMissingColumnError(initial.error)) {
+    return {
+      data: null,
+      error: initial.error,
+      hasRecognitionColumn: true,
+    };
+  }
+
+  const fallbackFields = selectedFields.filter((field) => field !== "recognition_id");
+  const retry = await supabase
+    .from("progreso_test")
+    .select(fallbackFields.join(","))
+    .eq("usuario_id", userId)
+    .maybeSingle();
+
+  if (retry.error) {
+    return {
+      data: null,
+      error: retry.error,
+      hasRecognitionColumn: false,
+    };
+  }
+
+  return {
+    data: retry.data ? { ...retry.data, recognition_id: null } : null,
+    error: null,
+    hasRecognitionColumn: false,
+  };
+}
+
+function hasRecognition(progress) {
+  return Boolean(progress?.recognition_id);
+}
+
+async function markProgressCompleted(supabase, { userId, completedAt, recognitionId }) {
+  const payload = {
+    estado: STATUS.COMPLETADO,
+    completed_at: completedAt,
+    recognition_id: recognitionId,
+    updated_at: completedAt,
+  };
+
+  const initial = await supabase.from("progreso_test").update(payload).eq("usuario_id", userId);
+
+  if (!initial.error) {
+    return { error: null, hasRecognitionColumn: true };
+  }
+
+  if (!isMissingColumnError(initial.error)) {
+    return { error: initial.error, hasRecognitionColumn: true };
+  }
+
+  const fallbackPayload = {
+    estado: STATUS.COMPLETADO,
+    completed_at: completedAt,
+    updated_at: completedAt,
+  };
+
+  const retry = await supabase.from("progreso_test").update(fallbackPayload).eq("usuario_id", userId);
+  return { error: retry.error || null, hasRecognitionColumn: false };
+}
+
 async function getProgressMap(supabase, userIds) {
   if (!Array.isArray(userIds) || userIds.length === 0) {
     return new Map();
   }
 
-  const { data, error } = await supabase
+  const initial = await supabase
     .from("progreso_test")
     .select("usuario_id,estado,started_at,policy_accepted_at,last_quiz_score,attempt_count,completed_at,recognition_id")
     .in("usuario_id", userIds);
 
-  if (error || !Array.isArray(data)) {
+  if (!initial.error && Array.isArray(initial.data)) {
+    return new Map(initial.data.map((row) => [row.usuario_id, row]));
+  }
+
+  if (!isMissingColumnError(initial.error)) {
     return new Map();
   }
 
-  return new Map(data.map((row) => [row.usuario_id, row]));
+  const retry = await supabase
+    .from("progreso_test")
+    .select("usuario_id,estado,started_at,policy_accepted_at,last_quiz_score,attempt_count,completed_at")
+    .in("usuario_id", userIds);
+
+  if (retry.error || !Array.isArray(retry.data)) {
+    return new Map();
+  }
+
+  return new Map(
+    retry.data.map((row) => [
+      row.usuario_id,
+      {
+        ...row,
+        recognition_id: null,
+      },
+    ])
+  );
 }
 
 async function logAudit(supabase, { usuarioId = null, actor = "SYSTEM", action, metadata = {} }) {
@@ -215,6 +336,9 @@ module.exports = {
   nowIso,
   ensureRecognitionsBucket,
   createSignedDownloadUrl,
+  fetchProgressByUser,
+  hasRecognition,
+  markProgressCompleted,
   getProgressMap,
   logAudit,
 };

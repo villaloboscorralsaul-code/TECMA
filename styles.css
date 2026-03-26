@@ -1156,40 +1156,33 @@ p {
 @media print {
   @page {
     size: Letter portrait;
-    margin: 0.38in;
+    margin: 0.34in;
   }
 
   html,
   body {
     width: 100%;
-    height: 100%;
-    background: #fff;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
-  body {
-    background: #fff;
-    margin: 0;
+  body * {
+    visibility: hidden;
+  }
+
+  #recognitionStep,
+  #recognitionStep * {
+    visibility: visible;
   }
 
   .background-stage,
   .no-print,
   .tecma-header,
-  .tecma-footer {
-    display: none !important;
-  }
-
-  .app-shell {
-    width: 100%;
-    max-width: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .screen,
-  .step {
-    display: block !important;
-  }
-
+  .tecma-footer,
   #entryScreen,
   #welcomeStep,
   #policyStep,
@@ -1200,59 +1193,168 @@ p {
 
   #recognitionStep {
     display: block !important;
+    position: static !important;
+  }
+
+  .app-shell {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .screen,
+  .step {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
   }
 
   .recognition-panel {
-    border: 0;
-    box-shadow: none;
-    padding: 0;
-    background: #fff;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: #fff !important;
   }
 
   .recognition-document {
-    border-radius: 0;
-    border: 1.5px solid #1a2b4c;
-    min-height: 0;
-    height: 100%;
-    padding: 0.28in;
-    overflow: hidden;
-    box-shadow: none;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    border-radius: 0 !important;
+    border: 1.5px solid #1a2b4c !important;
+    min-height: 10.15in;
+    height: auto !important;
+    padding: 0.22in !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
     break-inside: avoid;
+    page-break-inside: avoid;
   }
 
-  .recognition-photo {
-    width: 100px;
-    height: 126px;
+  .recognition-document::before,
+  .recognition-document::after {
+    opacity: 0.05;
   }
 
-  .recognition-photo-empty {
-    width: 100px;
-    height: 126px;
+  .recognition-header {
+    flex-wrap: nowrap !important;
+    align-items: flex-start;
+    gap: 0.14in;
+  }
+
+  .recognition-header-logos {
+    flex: 1;
+    min-width: 0;
+    gap: 0.1in;
+  }
+
+  .recognition-header .tecma-logo.large {
+    width: 2.45in;
+    height: 0.95in;
+  }
+
+  .header-badge {
+    width: 0.9in;
+    height: 0.9in;
+    padding: 0.08in;
+    border-radius: 10px;
+  }
+
+  .flag-group {
+    gap: 0.06in;
+  }
+
+  .flag {
+    min-width: 0.68in;
+    height: 0.32in;
+    padding: 0 0.08in;
+    font-size: 9.5px;
   }
 
   .recognition-title {
-    margin: 10px 0 8px;
-    font-size: 0.96rem;
+    margin: 0.13in 0 0.1in !important;
+    font-size: 18px !important;
+    line-height: 1.2;
+  }
+
+  .recognition-identity-row {
+    grid-template-columns: 1fr 1.95in !important;
+    gap: 0.14in !important;
+    align-items: start;
   }
 
   .recognition-text {
-    font-size: 0.88rem;
-    line-height: 1.45;
+    font-size: 10.8pt !important;
+    line-height: 1.5 !important;
+  }
+
+  .recognition-photo-wrap {
+    width: 1.95in;
+    padding: 0.08in;
+    border-radius: 10px;
+  }
+
+  .recognition-photo,
+  .recognition-photo-empty {
+    width: 1.58in;
+    height: 2.02in;
+    margin: 0 auto;
+  }
+
+  .recognition-photo-wrap figcaption {
+    margin-top: 0.05in;
+    font-size: 8.3pt;
   }
 
   .recognition-meta {
-    margin-top: 8px;
-    padding-top: 7px;
-    font-size: 0.82rem;
+    margin-top: 0.12in !important;
+    padding-top: 0.08in !important;
+    gap: 0.04in !important;
+    font-size: 10.5pt !important;
   }
 
   .recognition-signature-row {
-    margin-top: 10px;
-    gap: 12px;
+    margin-top: 0.18in !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.22in !important;
+  }
+
+  .signature-box {
+    min-height: 0 !important;
+    font-size: 10.5pt !important;
+  }
+
+  .signature-line {
+    margin: 0 0 0.04in !important;
   }
 
   .recognition-footer {
-    margin-top: 8px;
-    padding-top: 7px;
+    margin-top: 0.12in !important;
+    padding-top: 0.08in !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 0.08in !important;
+    align-items: center !important;
+  }
+
+  .verify-block {
+    gap: 0.06in;
+    font-size: 8pt !important;
+  }
+
+  #recognitionQr {
+    width: 0.9in !important;
+    height: 0.9in !important;
+    border-width: 2px !important;
+  }
+
+  p {
+    widows: 3;
+    orphans: 3;
   }
 }

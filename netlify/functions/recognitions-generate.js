@@ -9,6 +9,9 @@ const {
   json,
   parseBody,
   getSupabaseAdmin,
+  fetchProgressByUser,
+  hasRecognition,
+  markProgressCompleted,
   randomToken,
   buildRecognitionFolio,
   nowIso,
@@ -675,17 +678,15 @@ exports.handler = async (event) => {
       });
     }
 
-    const { data: progress, error: progressError } = await supabase
-      .from("progreso_test")
-      .select("estado,recognition_id")
-      .eq("usuario_id", userId)
-      .maybeSingle();
+    const { data: progress, error: progressError } = await fetchProgressByUser(supabase, userId, [
+      "estado",
+    ]);
 
     if (progressError) {
       return json(500, { error: progressError.message });
     }
 
-    if (progress?.estado === STATUS.COMPLETADO || progress?.recognition_id) {
+    if (progress?.estado === STATUS.COMPLETADO || hasRecognition(progress)) {
       return json(403, {
         blocked: true,
         error:
@@ -746,15 +747,15 @@ exports.handler = async (event) => {
         return json(500, { error: refreshUploadError.message });
       }
 
-      await supabase
-        .from("progreso_test")
-        .update({
-          estado: STATUS.COMPLETADO,
-          completed_at: completedAt,
-          recognition_id: existingRecognition.id,
-          updated_at: completedAt,
-        })
-        .eq("usuario_id", userId);
+      const { error: refreshProgressError } = await markProgressCompleted(supabase, {
+        userId,
+        completedAt,
+        recognitionId: existingRecognition.id,
+      });
+
+      if (refreshProgressError) {
+        return json(500, { error: refreshProgressError.message });
+      }
 
       await logAudit(supabase, {
         usuarioId: userId,
@@ -829,15 +830,11 @@ exports.handler = async (event) => {
     }
 
     const completedAt = nowIso();
-    const { error: updateProgressError } = await supabase
-      .from("progreso_test")
-      .update({
-        estado: STATUS.COMPLETADO,
-        completed_at: completedAt,
-        recognition_id: createdRecognition.id,
-        updated_at: completedAt,
-      })
-      .eq("usuario_id", userId);
+    const { error: updateProgressError } = await markProgressCompleted(supabase, {
+      userId,
+      completedAt,
+      recognitionId: createdRecognition.id,
+    });
 
     if (updateProgressError) {
       return json(500, { error: updateProgressError.message });

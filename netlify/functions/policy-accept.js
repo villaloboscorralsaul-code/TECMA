@@ -3,6 +3,8 @@ const {
   json,
   parseBody,
   getSupabaseAdmin,
+  fetchProgressByUser,
+  hasRecognition,
   nowIso,
   logAudit,
 } = require("./_lib/common");
@@ -23,17 +25,15 @@ exports.handler = async (event) => {
     const supabase = getSupabaseAdmin();
     const now = nowIso();
 
-    const { data: progress, error: progressError } = await supabase
-      .from("progreso_test")
-      .select("estado,recognition_id")
-      .eq("usuario_id", userId)
-      .maybeSingle();
+    const { data: progress, error: progressError } = await fetchProgressByUser(supabase, userId, [
+      "estado",
+    ]);
 
     if (progressError) {
       return json(500, { error: progressError.message });
     }
 
-    if (progress?.estado === STATUS.COMPLETADO || progress?.recognition_id) {
+    if (progress?.estado === STATUS.COMPLETADO || hasRecognition(progress)) {
       await logAudit(supabase, {
         usuarioId: userId,
         actor: "SYSTEM",

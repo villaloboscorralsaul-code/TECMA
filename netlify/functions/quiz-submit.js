@@ -4,6 +4,8 @@ const {
   json,
   parseBody,
   getSupabaseAdmin,
+  fetchProgressByUser,
+  hasRecognition,
   nowIso,
   logAudit,
 } = require("./_lib/common");
@@ -31,17 +33,17 @@ exports.handler = async (event) => {
     const supabase = getSupabaseAdmin();
     const now = nowIso();
 
-    const { data: progress, error: progressError } = await supabase
-      .from("progreso_test")
-      .select("estado,attempt_count,recognition_id")
-      .eq("usuario_id", userId)
-      .maybeSingle();
+    const { data: progress, error: progressError } = await fetchProgressByUser(
+      supabase,
+      userId,
+      ["estado", "attempt_count"]
+    );
 
     if (progressError) {
       return json(500, { error: progressError.message });
     }
 
-    if (progress?.estado === STATUS.COMPLETADO || progress?.recognition_id) {
+    if (progress?.estado === STATUS.COMPLETADO || hasRecognition(progress)) {
       return json(403, {
         blocked: true,
         error: "El flujo ya está completado y bloqueado para nuevos intentos.",
