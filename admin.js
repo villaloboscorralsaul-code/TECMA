@@ -181,11 +181,12 @@ function renderUsers() {
       const scoreText =
         row.last_quiz_score == null ? "-" : `${row.last_quiz_score}/${QUIZ_TOTAL_QUESTIONS}`;
       const folioText = row.recognition_folio || "-";
+      const recognitionFolio = row.recognition_folio || "";
       const code = row.codigo_interno || "-";
       const area = row.area || "-";
       const userId = row.id || "";
       const recognitionId = normalizeRecognitionId(row.recognition_id);
-      const recognitionBtnDisabled = recognitionId ? "" : "disabled";
+      const recognitionBtnDisabled = recognitionId || recognitionFolio ? "" : "disabled";
 
       return `
         <tr>
@@ -198,7 +199,13 @@ function renderUsers() {
           <td>${escapeHtml(folioText)}</td>
           <td>
             <div class="actions">
-              <button class="small-btn" data-action="download-one" data-recognition-id="${recognitionId}" ${recognitionBtnDisabled}>
+              <button
+                class="small-btn"
+                data-action="download-one"
+                data-recognition-id="${recognitionId}"
+                data-recognition-folio="${escapeHtml(recognitionFolio)}"
+                ${recognitionBtnDisabled}
+              >
                 Descargar
               </button>
               <button
@@ -220,8 +227,9 @@ function renderUsers() {
   refs.usersTableBody.querySelectorAll("[data-action='download-one']").forEach((button) => {
     button.addEventListener("click", async () => {
       const recognitionId = normalizeRecognitionId(button.getAttribute("data-recognition-id"));
-      if (!recognitionId) return;
-      await downloadOne(recognitionId, button);
+      const recognitionFolio = String(button.getAttribute("data-recognition-folio") || "").trim();
+      if (!recognitionId && !recognitionFolio) return;
+      await downloadOne(recognitionId, recognitionFolio, button);
     });
   });
 
@@ -305,10 +313,11 @@ async function createUser() {
   }
 }
 
-async function downloadOne(recognitionId, triggerButton) {
+async function downloadOne(recognitionId, recognitionFolio, triggerButton) {
   const safeRecognitionId = normalizeRecognitionId(recognitionId);
-  if (!safeRecognitionId) {
-    setAdminMessage("El reconocimiento seleccionado no tiene un ID válido para descargar.");
+  const safeRecognitionFolio = String(recognitionFolio || "").trim();
+  if (!safeRecognitionId && !safeRecognitionFolio) {
+    setAdminMessage("El reconocimiento seleccionado no tiene identificador válido para descargar.");
     return;
   }
 
@@ -328,7 +337,13 @@ async function downloadOne(recognitionId, triggerButton) {
 
   try {
     setAdminMessage("Generando enlace de descarga...");
-    const data = await apiRequest(`/api/recognitions/${encodeURIComponent(safeRecognitionId)}/download`);
+    const routeId = safeRecognitionId || "lookup";
+    const folioQuery = safeRecognitionFolio
+      ? `&folio=${encodeURIComponent(safeRecognitionFolio)}`
+      : "";
+    const data = await apiRequest(
+      `/api/recognitions/${encodeURIComponent(routeId)}/download?refresh=1${folioQuery}`
+    );
     if (!data.download_url) {
       throw new Error("No se recibió URL de descarga.");
     }
@@ -403,7 +418,7 @@ async function downloadZip() {
     refs.downloadZipBtn.textContent = "Abriendo descarga...";
     setAdminMessage("Se abrirá una pestaña para preparar el ZIP.");
 
-    const zipUrl = buildApiUrl("/api/recognitions/export-zip");
+    const zipUrl = buildApiUrl("/api/recognitions/export-zip?refresh=1");
     openDownloadUrl(zipUrl);
   } catch (err) {
     setAdminMessage(`Error ZIP: ${err.message}`);

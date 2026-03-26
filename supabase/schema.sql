@@ -42,9 +42,13 @@ create table if not exists reconocimientos (
   verify_token text not null unique,
   issued_at timestamptz not null default now(),
   score integer,
+  photo_data_url text,
   file_path text not null,
   unique (usuario_id)
 );
+
+alter table if exists reconocimientos
+  add column if not exists photo_data_url text;
 
 create table if not exists eventos_auditoria (
   id bigint generated always as identity primary key,

@@ -7,6 +7,41 @@ const {
   requireAdmin,
   slugify,
 } = require("./_lib/common");
+const { buildRecognitionPdf, getVerifyUrl } = require("./recognitions-generate");
+
+function isMissingPhotoColumn(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("does not exist") && message.includes("photo_data_url");
+}
+
+async function fetchRecognitionsForUsers(supabase, userIds) {
+  const withPhoto = await supabase
+    .from("reconocimientos")
+    .select("id,usuario_id,folio,file_path,issued_at,score,verify_token,photo_data_url")
+    .in("usuario_id", userIds);
+
+  if (!withPhoto.error) {
+    return { rows: withPhoto.data || [], error: null };
+  }
+
+  if (!isMissingPhotoColumn(withPhoto.error)) {
+    return { rows: [], error: withPhoto.error };
+  }
+
+  const fallback = await supabase
+    .from("reconocimientos")
+    .select("id,usuario_id,folio,file_path,issued_at,score,verify_token")
+    .in("usuario_id", userIds);
+
+  if (fallback.error) {
+    return { rows: [], error: fallback.error };
+  }
+
+  return {
+    rows: (fallback.data || []).map((row) => ({ ...row, photo_data_url: null })),
+    error: null,
+  };
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST" && event.httpMethod !== "GET") {
@@ -20,6 +55,7 @@ exports.handler = async (event) => {
 
   try {
     const supabase = getSupabaseAdmin();
+    const refresh = String(event.queryStringParameters?.refresh || "1").trim() !== "0";
 
     const { data: progressRows, error: progressError } = await supabase
       .from("progreso_test")
@@ -47,10 +83,10 @@ exports.handler = async (event) => {
 
     const userMap = new Map((users || []).map((row) => [row.id, row.nombre]));
 
-    const { data: recognitionRows, error: recognitionError } = await supabase
-      .from("reconocimientos")
-      .select("id,usuario_id,folio,file_path")
-      .in("usuario_id", completedUserIds);
+    const { rows: recognitionRows, error: recognitionError } = await fetchRecognitionsForUsers(
+      supabase,
+      completedUserIds
+    );
 
     if (recognitionError) {
       return json(500, { error: recognitionError.message });
@@ -63,9 +99,42 @@ exports.handler = async (event) => {
     const zip = new JSZip();
 
     for (const recognition of recognitionRows) {
-      const { data: fileData, error: fileError } = await supabase.storage
-        .from(RECOGNITION_BUCKET)
-        .download(recognition.file_path);
+      let fileData = null;
+      let fileError = null;
+
+      const downloaded = await supabase.storage.from(RECOGNITION_BUCKET).download(recognition.file_path);
+      fileData = downloaded.data;
+      fileError = downloaded.error;
+
+      if (refresh && !fileError) {
+        try {
+          const legacyPdfBytes = fileData ? Buffer.from(await fileData.arrayBuffer()) : null;
+          const refreshedPdf = await buildRecognitionPdf({
+            employeeName: userMap.get(recognition.usuario_id) || "Colaborador",
+            folio: recognition.folio,
+            issuedAtIso: recognition.issued_at || new Date().toISOString(),
+            score: Number.isFinite(Number(recognition.score)) ? Number(recognition.score) : null,
+            verifyUrl: getVerifyUrl(recognition.verify_token),
+            photoDataUrl: recognition.photo_data_url || "",
+            legacyPdfBytes,
+          });
+
+          await supabase.storage
+            .from(RECOGNITION_BUCKET)
+            .upload(recognition.file_path, Buffer.from(refreshedPdf), {
+              contentType: "application/pdf",
+              upsert: true,
+            });
+
+          const refreshedDownload = await supabase.storage
+            .from(RECOGNITION_BUCKET)
+            .download(recognition.file_path);
+          fileData = refreshedDownload.data;
+          fileError = refreshedDownload.error;
+        } catch {
+          // Mantén el archivo previo si falla la regeneración.
+        }
+      }
 
       if (fileError || !fileData) {
         continue;

@@ -28,6 +28,10 @@ function getVerifyUrl(token) {
   return `${baseUrl}/api/recognitions/verify?token=${token}`;
 }
 
+function getPublicAssetBaseUrl() {
+  return (process.env.PUBLIC_SITE_URL || process.env.URL || "").replace(/\/$/, "");
+}
+
 function parseImageDataUrl(dataUrl) {
   if (!dataUrl || typeof dataUrl !== "string") {
     return null;
@@ -68,6 +72,38 @@ async function embedLocalPng(pdfDoc, filename) {
   return null;
 }
 
+async function embedRemotePng(pdfDoc, filename) {
+  const baseUrl = getPublicAssetBaseUrl();
+  if (!baseUrl || typeof fetch !== "function") {
+    return null;
+  }
+
+  const candidates = [
+    `${baseUrl}/assets/${filename}`,
+    `${baseUrl}/${filename}`,
+  ];
+
+  for (const assetUrl of candidates) {
+    try {
+      const response = await fetch(assetUrl, { redirect: "follow" });
+      if (!response.ok) {
+        continue;
+      }
+
+      const bytes = Buffer.from(await response.arrayBuffer());
+      return await pdfDoc.embedPng(bytes);
+    } catch {
+      // Continue with next candidate.
+    }
+  }
+
+  return null;
+}
+
+async function embedAssetPng(pdfDoc, filename) {
+  return (await embedLocalPng(pdfDoc, filename)) || (await embedRemotePng(pdfDoc, filename));
+}
+
 function wrapText(font, text, fontSize, maxWidth) {
   const words = String(text || "").split(/\s+/).filter(Boolean);
   if (words.length === 0) {
@@ -104,9 +140,7 @@ function drawCenteredTextInBox(page, text, { font, size, color, x, width, y }) {
   page.drawText(text, { x: textX, y, size, font, color });
 }
 
-function drawFlagPill(page, { x, y, label, type, font, textColor }) {
-  const width = 52;
-  const height = 22;
+function drawFlagPill(page, { x, y, label, type, font, textColor, width = 48, height = 20, textSize = 8.2 }) {
   const stripeWidth = width / 3;
 
   let left = rgb(0.0, 0.41, 0.28);
@@ -156,7 +190,6 @@ function drawFlagPill(page, { x, y, label, type, font, textColor }) {
     borderWidth: 0.8,
   });
 
-  const textSize = 8.8;
   const textWidth = font.widthOfTextAtSize(label, textSize);
   const textX = x + (width - textWidth) / 2;
   const textY = y + (height - textSize) / 2 + 1;
@@ -214,7 +247,15 @@ function fitImageContain(image, maxWidth, maxHeight) {
   };
 }
 
-async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, verifyUrl, photoDataUrl }) {
+async function buildRecognitionPdf({
+  employeeName,
+  folio,
+  issuedAtIso,
+  score,
+  verifyUrl,
+  photoDataUrl,
+  legacyPdfBytes = null,
+}) {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -242,10 +283,11 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 100);
+  const safeScore = Number.isFinite(Number(score)) ? Number(score) : null;
 
-  const logoImage = await embedLocalPng(pdfDoc, "tecma-logo.png");
-  const watermarkImage = await embedLocalPng(pdfDoc, "tecma-badge.png");
-  const headerBadgeImage = await embedLocalPng(pdfDoc, "tecma-badge-alt.png");
+  const logoImage = await embedAssetPng(pdfDoc, "tecma-logo.png");
+  const watermarkImage = await embedAssetPng(pdfDoc, "tecma-badge.png");
+  const headerBadgeImage = await embedAssetPng(pdfDoc, "tecma-badge-alt.png");
 
   let employeePhoto = null;
   const parsedImage = parseImageDataUrl(photoDataUrl);
@@ -257,6 +299,22 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
         : await pdfDoc.embedJpg(imageBytes);
     } catch {
       employeePhoto = null;
+    }
+  }
+
+  let legacyPhotoSlice = null;
+  if (!employeePhoto && legacyPdfBytes) {
+    try {
+      const legacyDoc = await PDFDocument.load(legacyPdfBytes);
+      const legacyPage = legacyDoc.getPage(0);
+      legacyPhotoSlice = await pdfDoc.embedPage(legacyPage, {
+        left: 441,
+        bottom: 564,
+        right: 541,
+        top: 682,
+      });
+    } catch {
+      legacyPhotoSlice = null;
     }
   }
 
@@ -334,43 +392,52 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
 
   page.drawText("Programa de Cumplimiento Social", {
     x: logoFrame.x + logoFrame.width + 10,
-    y: header.y + 30,
-    size: 12,
+    y: header.y + 31,
+    size: 11.2,
     font: fontBold,
     color: colors.white,
   });
-  page.drawText("Tratado entre Mexico, Estados Unidos y Canada", {
+  page.drawText("Tratado entre México, Estados Unidos y Canadá", {
     x: logoFrame.x + logoFrame.width + 10,
     y: header.y + 12,
-    size: 9,
+    size: 8.4,
     font: fontRegular,
     color: rgb(0.85, 0.90, 0.98),
   });
 
-  const flagsX = inner.x + inner.width - 224;
+  const flagsX = inner.x + inner.width - 166;
   drawFlagPill(page, {
     x: flagsX,
-    y: header.y + 14,
+    y: header.y + 16,
     label: "MEX",
     type: "MEX",
     font: fontBold,
     textColor: colors.navy,
+    width: 48,
+    height: 20,
+    textSize: 8.2,
   });
   drawFlagPill(page, {
-    x: flagsX + 58,
-    y: header.y + 14,
+    x: flagsX + 52,
+    y: header.y + 16,
     label: "USA",
     type: "USA",
     font: fontBold,
     textColor: colors.navy,
+    width: 48,
+    height: 20,
+    textSize: 8.2,
   });
   drawFlagPill(page, {
-    x: flagsX + 116,
-    y: header.y + 14,
+    x: flagsX + 104,
+    y: header.y + 16,
     label: "CAN",
     type: "CAN",
     font: fontBold,
     textColor: colors.navy,
+    width: 48,
+    height: 20,
+    textSize: 8.2,
   });
 
   if (headerBadgeImage) {
@@ -403,7 +470,7 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
     });
   }
 
-  drawCenteredText(page, "RECONOCIMIENTO DE CUMPLIMIENTO DE POLITICA SOCIAL T-MEC", {
+  drawCenteredText(page, "RECONOCIMIENTO DE CUMPLIMIENTO DE POLÍTICA SOCIAL T-MEC", {
     font: fontBold,
     size: 14,
     color: rgb(0.82, 0.44, 0.12),
@@ -439,12 +506,15 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
   });
 
   drawFlagPill(page, {
-    x: photoCard.x + 11,
+    x: photoCard.x + 13,
     y: photoCard.y + photoCard.height - 30,
     label: "MEX",
     type: "MEX",
     font: fontBold,
     textColor: colors.navy,
+    width: 36,
+    height: 20,
+    textSize: 7.4,
   });
   drawFlagPill(page, {
     x: photoCard.x + 53,
@@ -453,14 +523,20 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
     type: "USA",
     font: fontBold,
     textColor: colors.navy,
+    width: 36,
+    height: 20,
+    textSize: 7.4,
   });
   drawFlagPill(page, {
-    x: photoCard.x + 95,
+    x: photoCard.x + 93,
     y: photoCard.y + photoCard.height - 30,
     label: "CAN",
     type: "CAN",
     font: fontBold,
     textColor: colors.navy,
+    width: 36,
+    height: 20,
+    textSize: 7.4,
   });
 
   const photoFrame = { x: photoCard.x + 18, y: photoCard.y + 56, width: 106, height: 124 };
@@ -481,6 +557,13 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
       width: fittedPhoto.width,
       height: fittedPhoto.height,
     });
+  } else if (legacyPhotoSlice) {
+    page.drawPage(legacyPhotoSlice, {
+      x: photoFrame.x + 3,
+      y: photoFrame.y + 3,
+      width: photoFrame.width - 6,
+      height: photoFrame.height - 6,
+    });
   } else {
     page.drawRectangle({
       x: photoFrame.x + 3,
@@ -499,7 +582,7 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
     });
   }
 
-  drawCenteredTextInBox(page, "FOTOGRAFIA DEL COLABORADOR", {
+  drawCenteredTextInBox(page, "FOTOGRAFÍA DEL COLABORADOR", {
     font: fontBold,
     size: 7.8,
     color: rgb(0.27, 0.35, 0.52),
@@ -516,7 +599,7 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
     thickness: 1,
   });
 
-  page.drawText("Fecha de finalizacion:", {
+  page.drawText("Fecha de finalización:", {
     x: 46,
     y: 438,
     size: 11.2,
@@ -546,13 +629,18 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
     color: colors.text,
   });
 
-  page.drawText(`Calificación: ${score}/${QUIZ_TOTAL_QUESTIONS}`, {
-    x: 46,
-    y: 370,
-    size: 11.2,
-    font: fontBold,
-    color: colors.green,
-  });
+  page.drawText(
+    safeScore == null
+      ? "Calificación: registrada"
+      : `Calificación: ${safeScore}/${QUIZ_TOTAL_QUESTIONS}`,
+    {
+      x: 46,
+      y: 370,
+      size: 11.2,
+      font: fontBold,
+      color: colors.green,
+    }
+  );
 
   page.drawLine({
     start: { x: 46, y: 196 },
@@ -624,7 +712,7 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
     });
   }
 
-  const verifyLabel = `Verificacion: ${verifyUrl}`;
+  const verifyLabel = `Verificación: ${verifyUrl}`;
   const verifyLines = wrapText(fontRegular, verifyLabel, 8.5, 410);
   let verifyY = 88;
   for (const line of verifyLines.slice(0, 3)) {
@@ -639,6 +727,75 @@ async function buildRecognitionPdf({ employeeName, folio, issuedAtIso, score, ve
   }
 
   return pdfDoc.save();
+}
+
+async function fetchRecognitionByUserWithPhoto(supabase, userId) {
+  const withPhoto = await supabase
+    .from("reconocimientos")
+    .select("id,folio,issued_at,file_path,verify_token,photo_data_url")
+    .eq("usuario_id", userId)
+    .maybeSingle();
+
+  if (!withPhoto.error) {
+    return { data: withPhoto.data || null, error: null, hasPhotoColumn: true };
+  }
+
+  const message = String(withPhoto.error.message || "").toLowerCase();
+  if (!(message.includes("does not exist") && message.includes("photo_data_url"))) {
+    return { data: null, error: withPhoto.error, hasPhotoColumn: true };
+  }
+
+  const fallback = await supabase
+    .from("reconocimientos")
+    .select("id,folio,issued_at,file_path,verify_token")
+    .eq("usuario_id", userId)
+    .maybeSingle();
+
+  if (fallback.error) {
+    return { data: null, error: fallback.error, hasPhotoColumn: false };
+  }
+
+  return {
+    data: fallback.data ? { ...fallback.data, photo_data_url: null } : null,
+    error: null,
+    hasPhotoColumn: false,
+  };
+}
+
+async function insertRecognitionWithPhotoSupport(supabase, payload) {
+  const withPhoto = await supabase
+    .from("reconocimientos")
+    .insert(payload)
+    .select("id,folio,issued_at,file_path,verify_token,photo_data_url")
+    .single();
+
+  if (!withPhoto.error) {
+    return { data: withPhoto.data, error: null, hasPhotoColumn: true };
+  }
+
+  const message = String(withPhoto.error.message || "").toLowerCase();
+  if (!(message.includes("does not exist") && message.includes("photo_data_url"))) {
+    return { data: null, error: withPhoto.error, hasPhotoColumn: true };
+  }
+
+  const { photo_data_url, ...fallbackPayload } = payload;
+  void photo_data_url;
+
+  const fallback = await supabase
+    .from("reconocimientos")
+    .insert(fallbackPayload)
+    .select("id,folio,issued_at,file_path,verify_token")
+    .single();
+
+  if (fallback.error) {
+    return { data: null, error: fallback.error, hasPhotoColumn: false };
+  }
+
+  return {
+    data: { ...fallback.data, photo_data_url: null },
+    error: null,
+    hasPhotoColumn: false,
+  };
 }
 
 exports.handler = async (event) => {
@@ -712,11 +869,10 @@ exports.handler = async (event) => {
       });
     }
 
-    const { data: existingRecognition, error: existingError } = await supabase
-      .from("reconocimientos")
-      .select("id,folio,issued_at,file_path,verify_token")
-      .eq("usuario_id", userId)
-      .maybeSingle();
+    const {
+      data: existingRecognition,
+      error: existingError,
+    } = await fetchRecognitionByUserWithPhoto(supabase, userId);
 
     if (existingError) {
       return json(500, { error: existingError.message });
@@ -727,13 +883,28 @@ exports.handler = async (event) => {
 
       await ensureRecognitionsBucket(supabase);
 
+      let legacyPdfBytes = null;
+      if (existingRecognition.file_path) {
+        try {
+          const legacyFile = await supabase.storage
+            .from(RECOGNITION_BUCKET)
+            .download(existingRecognition.file_path);
+          if (legacyFile.data) {
+            legacyPdfBytes = Buffer.from(await legacyFile.data.arrayBuffer());
+          }
+        } catch {
+          legacyPdfBytes = null;
+        }
+      }
+
       const refreshedPdf = await buildRecognitionPdf({
         employeeName: user.nombre,
         folio: existingRecognition.folio,
         issuedAtIso: existingRecognition.issued_at || completedAt,
         score: latestAttempt.score,
         verifyUrl: getVerifyUrl(existingRecognition.verify_token),
-        photoDataUrl,
+        photoDataUrl: photoDataUrl || existingRecognition.photo_data_url || "",
+        legacyPdfBytes,
       });
 
       const { error: refreshUploadError } = await supabase.storage
@@ -804,18 +975,18 @@ exports.handler = async (event) => {
       return json(500, { error: uploadError.message });
     }
 
-    const { data: createdRecognition, error: insertError } = await supabase
-      .from("reconocimientos")
-      .insert({
+    const { data: createdRecognition, error: insertError } = await insertRecognitionWithPhotoSupport(
+      supabase,
+      {
         usuario_id: userId,
         folio,
         verify_token: verifyToken,
         issued_at: issuedAt,
         score: latestAttempt.score,
         file_path: filePath,
-      })
-      .select("id,folio,issued_at,file_path,verify_token")
-      .single();
+        photo_data_url: photoDataUrl || null,
+      }
+    );
 
     if (insertError) {
       await supabase.storage.from(RECOGNITION_BUCKET).remove([filePath]);
@@ -866,3 +1037,6 @@ exports.handler = async (event) => {
     return json(500, { error: err.message || "Unexpected error" });
   }
 };
+
+module.exports.buildRecognitionPdf = buildRecognitionPdf;
+module.exports.getVerifyUrl = getVerifyUrl;
