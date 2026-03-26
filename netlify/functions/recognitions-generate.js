@@ -36,6 +36,19 @@ function normalizeRecognitionFolio(folio) {
   return String(folio || "").trim().replace(/^TECMA-CERT-/i, "TECMA-RECON-");
 }
 
+function isMissingPhotoColumnError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  if (!message.includes("photo_data_url")) {
+    return false;
+  }
+
+  return (
+    message.includes("does not exist") ||
+    message.includes("schema cache") ||
+    message.includes("could not find")
+  );
+}
+
 function parseImageDataUrl(dataUrl) {
   if (!dataUrl || typeof dataUrl !== "string") {
     return null;
@@ -745,8 +758,7 @@ async function fetchRecognitionByUserWithPhoto(supabase, userId) {
     return { data: withPhoto.data || null, error: null, hasPhotoColumn: true };
   }
 
-  const message = String(withPhoto.error.message || "").toLowerCase();
-  if (!(message.includes("does not exist") && message.includes("photo_data_url"))) {
+  if (!isMissingPhotoColumnError(withPhoto.error)) {
     return { data: null, error: withPhoto.error, hasPhotoColumn: true };
   }
 
@@ -778,8 +790,7 @@ async function insertRecognitionWithPhotoSupport(supabase, payload) {
     return { data: withPhoto.data, error: null, hasPhotoColumn: true };
   }
 
-  const message = String(withPhoto.error.message || "").toLowerCase();
-  if (!(message.includes("does not exist") && message.includes("photo_data_url"))) {
+  if (!isMissingPhotoColumnError(withPhoto.error)) {
     return { data: null, error: withPhoto.error, hasPhotoColumn: true };
   }
 
@@ -934,10 +945,13 @@ exports.handler = async (event) => {
       }
 
       if (photoDataUrl) {
-        await supabase
+        const { error: updatePhotoError } = await supabase
           .from("reconocimientos")
           .update({ photo_data_url: photoDataUrl })
           .eq("id", existingRecognition.id);
+        if (updatePhotoError && !isMissingPhotoColumnError(updatePhotoError)) {
+          return json(500, { error: updatePhotoError.message });
+        }
       }
 
       await logAudit(supabase, {

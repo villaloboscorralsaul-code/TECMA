@@ -37,7 +37,15 @@ function extractRecognitionId(event) {
 
 function isMissingPhotoColumn(error) {
   const message = String(error?.message || "").toLowerCase();
-  return message.includes("does not exist") && message.includes("photo_data_url");
+  if (!message.includes("photo_data_url")) {
+    return false;
+  }
+
+  return (
+    message.includes("does not exist") ||
+    message.includes("schema cache") ||
+    message.includes("could not find")
+  );
 }
 
 async function fetchRecognitionByLookup(supabase, { id, folio }) {
