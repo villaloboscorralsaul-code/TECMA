@@ -801,21 +801,7 @@ async function buildRecognitionPdf({
     }
   }
 
-  let legacyPhotoSlice = null;
-  if (!employeePhoto && legacyPdfBytes) {
-    try {
-      const legacyDoc = await PDFDocument.load(legacyPdfBytes);
-      const legacyPage = legacyDoc.getPage(0);
-      legacyPhotoSlice = await pdfDoc.embedPage(legacyPage, {
-        left: 441,
-        bottom: 564,
-        right: 541,
-        top: 682,
-      });
-    } catch {
-      legacyPhotoSlice = null;
-    }
-  }
+  void legacyPdfBytes;
 
   const doc = { x: 24, y: 24, width: 564, height: 744 };
   const content = { x: doc.x + 16, y: doc.y + 16, width: doc.width - 32, height: doc.height - 32 };
@@ -991,13 +977,6 @@ async function buildRecognitionPdf({
       y: photoFrame.y + (photoFrame.height - fittedPhoto.height) / 2,
       width: fittedPhoto.width,
       height: fittedPhoto.height,
-    });
-  } else if (legacyPhotoSlice) {
-    page.drawPage(legacyPhotoSlice, {
-      x: photoFrame.x + 4,
-      y: photoFrame.y + 4,
-      width: photoFrame.width - 8,
-      height: photoFrame.height - 8,
     });
   } else {
     page.drawRectangle({
