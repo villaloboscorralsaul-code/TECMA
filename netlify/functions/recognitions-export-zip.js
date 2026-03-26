@@ -7,7 +7,11 @@ const {
   requireAdmin,
   slugify,
 } = require("./_lib/common");
-const { buildRecognitionPdf, getVerifyUrl } = require("./recognitions-generate");
+const {
+  buildRecognitionPdf,
+  getVerifyUrl,
+  normalizeRecognitionFolio,
+} = require("./recognitions-generate");
 
 function isMissingPhotoColumn(error) {
   const message = String(error?.message || "").toLowerCase();
@@ -144,7 +148,8 @@ exports.handler = async (event) => {
 
       const employeeName = userMap.get(recognition.usuario_id) || "usuario";
       const safeName = slugify(employeeName) || "usuario";
-      const filename = `${recognition.folio}-${safeName}.pdf`;
+      const safeFolio = normalizeRecognitionFolio(recognition.folio) || recognition.folio;
+      const filename = `${safeFolio}-${safeName}.pdf`;
       const buffer = Buffer.from(await fileData.arrayBuffer());
 
       zip.file(filename, buffer);

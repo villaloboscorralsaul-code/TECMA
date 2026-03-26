@@ -32,6 +32,10 @@ function getPublicAssetBaseUrl() {
   return (process.env.PUBLIC_SITE_URL || process.env.URL || "").replace(/\/$/, "");
 }
 
+function normalizeRecognitionFolio(folio) {
+  return String(folio || "").trim().replace(/^TECMA-CERT-/i, "TECMA-RECON-");
+}
+
 function parseImageDataUrl(dataUrl) {
   if (!dataUrl || typeof dataUrl !== "string") {
     return null;
@@ -284,6 +288,7 @@ async function buildRecognitionPdf({
     .trim()
     .slice(0, 100);
   const safeScore = Number.isFinite(Number(score)) ? Number(score) : null;
+  const displayFolio = normalizeRecognitionFolio(folio);
 
   const logoImage = await embedAssetPng(pdfDoc, "tecma-logo.png");
   const watermarkImage = await embedAssetPng(pdfDoc, "tecma-badge.png");
@@ -621,7 +626,7 @@ async function buildRecognitionPdf({
     font: fontBold,
     color: colors.navy,
   });
-  page.drawText(folio, {
+  page.drawText(displayFolio || folio, {
     x: 84,
     y: 404,
     size: 11.2,
@@ -1047,3 +1052,4 @@ exports.handler = async (event) => {
 
 module.exports.buildRecognitionPdf = buildRecognitionPdf;
 module.exports.getVerifyUrl = getVerifyUrl;
+module.exports.normalizeRecognitionFolio = normalizeRecognitionFolio;

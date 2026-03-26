@@ -5,7 +5,11 @@ const {
   requireAdmin,
   createSignedDownloadUrl,
 } = require("./_lib/common");
-const { buildRecognitionPdf, getVerifyUrl } = require("./recognitions-generate");
+const {
+  buildRecognitionPdf,
+  getVerifyUrl,
+  normalizeRecognitionFolio,
+} = require("./recognitions-generate");
 
 function extractRecognitionId(event) {
   const queryId = String(event?.queryStringParameters?.id || "").trim();
@@ -90,6 +94,7 @@ exports.handler = async (event) => {
     const id = extractRecognitionId(event);
     const folio = String(event?.queryStringParameters?.folio || "").trim();
     const refresh = true;
+    const directDownload = String(event?.queryStringParameters?.direct || "").trim() === "1";
 
     if (!id && !folio) {
       return json(400, { error: "Recognition id is required" });
@@ -156,11 +161,35 @@ exports.handler = async (event) => {
       }
     }
 
+    const safeFolio = normalizeRecognitionFolio(recognition.folio);
+
+    if (directDownload) {
+      const { data: fileData, error: fileError } = await supabase.storage
+        .from(RECOGNITION_BUCKET)
+        .download(recognition.file_path);
+
+      if (fileError || !fileData) {
+        return json(500, { error: fileError?.message || "No fue posible descargar el archivo PDF." });
+      }
+
+      const buffer = Buffer.from(await fileData.arrayBuffer());
+      return {
+        statusCode: 200,
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": `attachment; filename="${safeFolio || "reconocimiento"}.pdf"`,
+          "cache-control": "no-store",
+        },
+        isBase64Encoded: true,
+        body: buffer.toString("base64"),
+      };
+    }
+
     const downloadUrl = await createSignedDownloadUrl(supabase, recognition.file_path, 60 * 10);
 
     return json(200, {
       id: recognition.id,
-      folio: recognition.folio,
+      folio: safeFolio || recognition.folio,
       download_url: downloadUrl,
     });
   } catch (err) {

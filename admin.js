@@ -322,7 +322,6 @@ async function downloadOne(recognitionId, recognitionFolio, triggerButton) {
   }
 
   const originalText = triggerButton ? triggerButton.textContent : "Descargar";
-  let pendingWindow = null;
 
   if (triggerButton) {
     triggerButton.disabled = true;
@@ -330,33 +329,19 @@ async function downloadOne(recognitionId, recognitionFolio, triggerButton) {
   }
 
   try {
-    pendingWindow = window.open("", "_blank", "noopener,noreferrer");
-  } catch {
-    pendingWindow = null;
-  }
-
-  try {
-    setAdminMessage("Generando enlace de descarga...");
+    setAdminMessage("Preparando PDF de reconocimiento...");
     const routeId = safeRecognitionId || "lookup";
-    const folioQuery = safeRecognitionFolio
-      ? `&folio=${encodeURIComponent(safeRecognitionFolio)}`
-      : "";
-    const data = await apiRequest(`/api/recognitions/${encodeURIComponent(routeId)}/download${folioQuery}`);
-    if (!data.download_url) {
-      throw new Error("No se recibió URL de descarga.");
+    const queryParts = ["direct=1"];
+    if (safeRecognitionFolio) {
+      queryParts.push(`folio=${encodeURIComponent(safeRecognitionFolio)}`);
     }
+    const directUrl = buildApiUrl(
+      `/api/recognitions/${encodeURIComponent(routeId)}/download?${queryParts.join("&")}`
+    );
 
-    if (pendingWindow && !pendingWindow.closed) {
-      pendingWindow.location.href = data.download_url;
-    } else {
-      openDownloadUrl(data.download_url);
-    }
-
-    setAdminMessage(`Descarga iniciada${data.folio ? ` (${data.folio})` : ""}.`);
+    openDownloadUrl(directUrl);
+    setAdminMessage("Descarga iniciada.");
   } catch (err) {
-    if (pendingWindow && !pendingWindow.closed) {
-      pendingWindow.close();
-    }
     setAdminMessage(`Error al descargar reconocimiento: ${err.message}`);
   } finally {
     if (triggerButton) {
