@@ -158,10 +158,7 @@ function drawCenteredTextInBox(page, text, { font, size, color, x, width, y }) {
 }
 
 function drawFlagPill(page, { x, y, label, type, font, textColor, width = 48, height = 20, textSize = 8.2 }) {
-  const radius = height / 2;
-  const innerX = x + radius;
-  const innerWidth = Math.max(width - radius * 2, 0.01);
-  const stripeWidth = innerWidth / 3;
+  const stripeWidth = width / 3;
 
   let left = rgb(0.0, 0.41, 0.28);
   let center = rgb(1, 1, 1);
@@ -179,65 +176,34 @@ function drawFlagPill(page, { x, y, label, type, font, textColor, width = 48, he
     right = rgb(0.81, 0.24, 0.21);
   }
 
-  page.drawCircle({
-    x: x + radius,
-    y: y + radius,
-    size: radius,
-    color: left,
-  });
-  page.drawCircle({
-    x: x + width - radius,
-    y: y + radius,
-    size: radius,
-    color: right,
-  });
   page.drawRectangle({
-    x: innerX,
+    x,
     y,
     width: stripeWidth,
     height,
     color: left,
   });
   page.drawRectangle({
-    x: innerX + stripeWidth,
+    x: x + stripeWidth,
     y,
     width: stripeWidth,
     height,
     color: center,
   });
   page.drawRectangle({
-    x: innerX + stripeWidth * 2,
+    x: x + stripeWidth * 2,
     y,
     width: stripeWidth,
     height,
     color: right,
   });
 
-  const borderColor = rgb(0.78, 0.82, 0.90);
-  page.drawLine({
-    start: { x: x + radius, y: y + height },
-    end: { x: x + width - radius, y: y + height },
-    thickness: 0.8,
-    color: borderColor,
-  });
-  page.drawLine({
-    start: { x: x + radius, y },
-    end: { x: x + width - radius, y },
-    thickness: 0.8,
-    color: borderColor,
-  });
-  page.drawCircle({
-    x: x + radius,
-    y: y + radius,
-    size: radius,
-    borderColor,
-    borderWidth: 0.8,
-  });
-  page.drawCircle({
-    x: x + width - radius,
-    y: y + radius,
-    size: radius,
-    borderColor,
+  page.drawRectangle({
+    x,
+    y,
+    width,
+    height,
+    borderColor: rgb(0.78, 0.82, 0.90),
     borderWidth: 0.8,
   });
 
