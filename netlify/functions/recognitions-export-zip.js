@@ -13,6 +13,24 @@ const {
   normalizeRecognitionFolio,
 } = require("./recognitions-generate");
 
+function parseIssuedAtTimestamp(row) {
+  const timestamp = Date.parse(String(row?.issued_at || ""));
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function isMissingRecognitionIdColumn(error) {
+  const message = String(error?.message || "").toLowerCase();
+  if (!message.includes("recognition_id")) {
+    return false;
+  }
+
+  return (
+    message.includes("does not exist") ||
+    message.includes("schema cache") ||
+    message.includes("could not find")
+  );
+}
+
 function isMissingPhotoColumn(error) {
   const message = String(error?.message || "").toLowerCase();
   if (!message.includes("photo_data_url")) {
@@ -55,6 +73,38 @@ async function fetchRecognitionsForUsers(supabase, userIds) {
   };
 }
 
+async function fetchCompletedProgressRows(supabase) {
+  const withRecognitionId = await supabase
+    .from("progreso_test")
+    .select("usuario_id,recognition_id")
+    .eq("estado", STATUS.COMPLETADO);
+
+  if (!withRecognitionId.error) {
+    return { rows: withRecognitionId.data || [], error: null };
+  }
+
+  if (!isMissingRecognitionIdColumn(withRecognitionId.error)) {
+    return { rows: [], error: withRecognitionId.error };
+  }
+
+  const fallback = await supabase
+    .from("progreso_test")
+    .select("usuario_id")
+    .eq("estado", STATUS.COMPLETADO);
+
+  if (fallback.error) {
+    return { rows: [], error: fallback.error };
+  }
+
+  return {
+    rows: (fallback.data || []).map((row) => ({
+      usuario_id: row.usuario_id,
+      recognition_id: null,
+    })),
+    error: null,
+  };
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST" && event.httpMethod !== "GET") {
     return json(405, { error: "Method not allowed" });
@@ -67,18 +117,17 @@ exports.handler = async (event) => {
 
   try {
     const supabase = getSupabaseAdmin();
-    const refresh = true;
+    const refresh = String(event?.queryStringParameters?.refresh || "").trim() === "1";
 
-    const { data: progressRows, error: progressError } = await supabase
-      .from("progreso_test")
-      .select("usuario_id")
-      .eq("estado", STATUS.COMPLETADO);
+    const { rows: progressRows, error: progressError } = await fetchCompletedProgressRows(supabase);
 
     if (progressError) {
       return json(500, { error: progressError.message });
     }
 
-    const completedUserIds = (progressRows || []).map((row) => row.usuario_id);
+    const completedUserIds = Array.from(
+      new Set((progressRows || []).map((row) => row.usuario_id).filter(Boolean))
+    );
 
     if (completedUserIds.length === 0) {
       return json(404, { error: "No completed users found" });
@@ -108,9 +157,75 @@ exports.handler = async (event) => {
       return json(404, { error: "No recognitions available to export" });
     }
 
+    const recognitionById = new Map();
+    const latestRecognitionByUser = new Map();
+    for (const recognition of recognitionRows) {
+      const recId = String(recognition?.id || "").trim();
+      const userId = String(recognition?.usuario_id || "").trim();
+      if (recId) {
+        recognitionById.set(recId, recognition);
+      }
+      if (!userId) {
+        continue;
+      }
+
+      const latest = latestRecognitionByUser.get(userId);
+      if (!latest) {
+        latestRecognitionByUser.set(userId, recognition);
+        continue;
+      }
+
+      const currentTs = parseIssuedAtTimestamp(latest);
+      const nextTs = parseIssuedAtTimestamp(recognition);
+      if (nextTs > currentTs) {
+        latestRecognitionByUser.set(userId, recognition);
+        continue;
+      }
+
+      if (nextTs === currentTs) {
+        const latestId = String(latest?.id || "");
+        if (recId > latestId) {
+          latestRecognitionByUser.set(userId, recognition);
+        }
+      }
+    }
+
+    const selectedRecognitions = [];
+    const seenRecognitionIds = new Set();
+    for (const progressRow of progressRows || []) {
+      const userId = String(progressRow?.usuario_id || "").trim();
+      if (!userId) {
+        continue;
+      }
+
+      const preferredRecognitionId = String(progressRow?.recognition_id || "").trim();
+      const recognition =
+        (preferredRecognitionId && recognitionById.get(preferredRecognitionId)) ||
+        latestRecognitionByUser.get(userId) ||
+        null;
+
+      if (!recognition) {
+        continue;
+      }
+
+      const recognitionId = String(recognition.id || "").trim();
+      if (recognitionId && seenRecognitionIds.has(recognitionId)) {
+        continue;
+      }
+      if (recognitionId) {
+        seenRecognitionIds.add(recognitionId);
+      }
+
+      selectedRecognitions.push(recognition);
+    }
+
+    if (selectedRecognitions.length === 0) {
+      return json(404, { error: "No recognitions available to export" });
+    }
+
     const zip = new JSZip();
 
-    for (const recognition of recognitionRows) {
+    for (const recognition of selectedRecognitions) {
       let outputBuffer = null;
       let fileData = null;
       let fileError = null;
@@ -119,7 +234,7 @@ exports.handler = async (event) => {
       fileData = downloaded.data;
       fileError = downloaded.error;
 
-      if (refresh && !fileError) {
+      if (refresh) {
         const legacyPdfBytes = fileData ? Buffer.from(await fileData.arrayBuffer()) : null;
         const refreshedPdf = await buildRecognitionPdf({
           employeeName: userMap.get(recognition.usuario_id) || "Colaborador",
@@ -157,6 +272,13 @@ exports.handler = async (event) => {
       const buffer = outputBuffer || Buffer.from(await fileData.arrayBuffer());
 
       zip.file(filename, buffer);
+    }
+
+    if (Object.keys(zip.files).length === 0) {
+      return json(404, {
+        error:
+          "No fue posible construir el ZIP porque ninguno de los reconocimientos tenía archivo PDF disponible.",
+      });
     }
 
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });

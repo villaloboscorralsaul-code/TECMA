@@ -101,7 +101,7 @@ exports.handler = async (event) => {
   try {
     const id = extractRecognitionId(event);
     const folio = String(event?.queryStringParameters?.folio || "").trim();
-    const refresh = true;
+    const refresh = String(event?.queryStringParameters?.refresh || "").trim() === "1";
     const directDownload = String(event?.queryStringParameters?.direct || "").trim() === "1";
 
     if (!id && !folio) {

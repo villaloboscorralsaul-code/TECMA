@@ -10,6 +10,37 @@ const {
   logAudit,
 } = require("./_lib/common");
 
+function getIssuedAtTimestamp(recognition) {
+  const timestamp = Date.parse(String(recognition?.issued_at || ""));
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function pickLatestRecognition(recognitions) {
+  if (!Array.isArray(recognitions) || recognitions.length === 0) {
+    return null;
+  }
+
+  return recognitions.reduce((latest, current) => {
+    if (!latest) {
+      return current;
+    }
+
+    const currentTs = getIssuedAtTimestamp(current);
+    const latestTs = getIssuedAtTimestamp(latest);
+    if (currentTs > latestTs) {
+      return current;
+    }
+
+    if (currentTs < latestTs) {
+      return latest;
+    }
+
+    const currentId = String(current?.id || "");
+    const latestId = String(latest?.id || "");
+    return currentId > latestId ? current : latest;
+  }, null);
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "GET" && event.httpMethod !== "DELETE") {
     return json(405, { error: "Method not allowed" });
@@ -118,7 +149,8 @@ exports.handler = async (event) => {
 
     const progressMap = await getProgressMap(supabase, userIds);
 
-    let recognitionMap = new Map();
+    let recognitionById = new Map();
+    let recognitionByUser = new Map();
     if (userIds.length > 0) {
       const { data: recognitionRows, error: recognitionError } = await supabase
         .from("reconocimientos")
@@ -129,14 +161,32 @@ exports.handler = async (event) => {
         return json(500, { error: recognitionError.message });
       }
 
-      recognitionMap = new Map(
-        (recognitionRows || []).map((recognition) => [recognition.usuario_id, recognition])
+      const safeRows = Array.isArray(recognitionRows) ? recognitionRows : [];
+      recognitionById = new Map(
+        safeRows.map((recognition) => [String(recognition.id || ""), recognition])
       );
+      recognitionByUser = safeRows.reduce((map, recognition) => {
+        const userKey = String(recognition.usuario_id || "");
+        if (!userKey) {
+          return map;
+        }
+        const current = map.get(userKey) || [];
+        current.push(recognition);
+        map.set(userKey, current);
+        return map;
+      }, new Map());
     }
 
     let rows = userRows.map((user) => {
       const progress = progressMap.get(user.id);
-      const recognition = recognitionMap.get(user.id);
+      const preferredRecognitionId = String(progress?.recognition_id || "").trim();
+      let recognition = preferredRecognitionId
+        ? recognitionById.get(preferredRecognitionId) || null
+        : null;
+
+      if (!recognition) {
+        recognition = pickLatestRecognition(recognitionByUser.get(String(user.id || "")));
+      }
 
       return {
         id: user.id,
