@@ -75,21 +75,193 @@ function getAdminKeyFromEvent(event) {
   return queryKey || headerKey || "";
 }
 
-function requireAdmin(event) {
-  const expected = process.env.ADMIN_ACCESS_KEY;
+function normalizeAdminEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
 
-  if (!expected) {
+function getAdminCredentials() {
+  return {
+    email: normalizeAdminEmail(process.env.ADMIN_LOGIN_EMAIL || ""),
+    password: String(process.env.ADMIN_LOGIN_PASSWORD || ""),
+  };
+}
+
+function getSessionSecret() {
+  return String(process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_ACCESS_KEY || "").trim();
+}
+
+function getSessionTtlSeconds() {
+  const raw = Number.parseInt(process.env.ADMIN_SESSION_TTL_SECONDS || "28800", 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : 28800;
+}
+
+function getSessionCookieName() {
+  return String(process.env.ADMIN_SESSION_COOKIE_NAME || "tecma_admin_session").trim() || "tecma_admin_session";
+}
+
+function encodeBase64Url(input) {
+  return Buffer.from(input, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function decodeBase64Url(input) {
+  const normalized = String(input || "")
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  const padded = normalized + "===".slice((normalized.length + 3) % 4);
+  return Buffer.from(padded, "base64").toString("utf8");
+}
+
+function timingSafeStringEquals(left, right) {
+  const a = Buffer.from(String(left || ""), "utf8");
+  const b = Buffer.from(String(right || ""), "utf8");
+  if (a.length !== b.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(a, b);
+}
+
+function verifyAdminCredentials({ email, password }) {
+  const configured = getAdminCredentials();
+  if (!configured.email || !configured.password) {
+    return false;
+  }
+
+  return (
+    timingSafeStringEquals(normalizeAdminEmail(email), configured.email) &&
+    timingSafeStringEquals(String(password || ""), configured.password)
+  );
+}
+
+function parseCookies(event) {
+  const rawCookie = event?.headers?.cookie || event?.headers?.Cookie || "";
+  return String(rawCookie || "")
+    .split(";")
+    .map((chunk) => chunk.trim())
+    .filter(Boolean)
+    .reduce((acc, pair) => {
+      const separatorIndex = pair.indexOf("=");
+      if (separatorIndex <= 0) {
+        return acc;
+      }
+      const key = pair.slice(0, separatorIndex).trim();
+      const value = pair.slice(separatorIndex + 1).trim();
+      if (!key) {
+        return acc;
+      }
+      acc[key] = value;
+      return acc;
+    }, {});
+}
+
+function getAdminSessionFromEvent(event) {
+  const secret = getSessionSecret();
+  if (!secret) {
+    return null;
+  }
+
+  const cookieName = getSessionCookieName();
+  const cookies = parseCookies(event);
+  const token = String(cookies[cookieName] || "").trim();
+  if (!token) {
+    return null;
+  }
+
+  const [payloadPart, signaturePart] = token.split(".");
+  if (!payloadPart || !signaturePart) {
+    return null;
+  }
+
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(payloadPart)
+    .digest("base64url");
+
+  if (!timingSafeStringEquals(signaturePart, expectedSignature)) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(decodeBase64Url(payloadPart));
+    const exp = Number(payload?.exp || 0);
+    if (!Number.isFinite(exp) || Date.now() >= exp) {
+      return null;
+    }
+
+    if (payload?.role !== "admin") {
+      return null;
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function createAdminSessionToken({ email, ttlSeconds = getSessionTtlSeconds() }) {
+  const secret = getSessionSecret();
+  if (!secret) {
+    return "";
+  }
+
+  const expiresAt = Date.now() + Number(ttlSeconds) * 1000;
+  const payload = {
+    role: "admin",
+    email: normalizeAdminEmail(email),
+    exp: expiresAt,
+  };
+
+  const payloadPart = encodeBase64Url(JSON.stringify(payload));
+  const signaturePart = crypto
+    .createHmac("sha256", secret)
+    .update(payloadPart)
+    .digest("base64url");
+
+  return `${payloadPart}.${signaturePart}`;
+}
+
+function buildAdminSessionCookie(token, ttlSeconds = getSessionTtlSeconds()) {
+  const secureAttr = process.env.NODE_ENV === "development" ? "" : "Secure; ";
+  return `${getSessionCookieName()}=${token}; Path=/; HttpOnly; ${secureAttr}SameSite=Lax; Max-Age=${ttlSeconds}`;
+}
+
+function clearAdminSessionCookie() {
+  const secureAttr = process.env.NODE_ENV === "development" ? "" : "Secure; ";
+  return `${getSessionCookieName()}=; Path=/; HttpOnly; ${secureAttr}SameSite=Lax; Max-Age=0`;
+}
+
+function requireAdmin(event) {
+  const expected = String(process.env.ADMIN_ACCESS_KEY || "").trim();
+  const hasLoginCredentials = Boolean(getAdminCredentials().email && getAdminCredentials().password);
+  const hasSessionSecret = Boolean(getSessionSecret());
+
+  if (!expected && !(hasLoginCredentials && hasSessionSecret)) {
     return {
       ok: false,
       response: json(500, {
-        error: "ADMIN_ACCESS_KEY is not configured.",
+        error: "Admin authentication is not configured.",
       }),
     };
   }
 
   const received = getAdminKeyFromEvent(event);
+  if (expected && received && timingSafeStringEquals(received, expected)) {
+    return { ok: true, mode: "key" };
+  }
 
-  if (!received || received !== expected) {
+  const session = getAdminSessionFromEvent(event);
+  if (session) {
+    return {
+      ok: true,
+      mode: "session",
+      session,
+    };
+  }
+
+  if (expected && (!received || !timingSafeStringEquals(received, expected)) && !session) {
     return {
       ok: false,
       response: json(401, {
@@ -98,7 +270,12 @@ function requireAdmin(event) {
     };
   }
 
-  return { ok: true };
+  return {
+    ok: false,
+    response: json(401, {
+      error: "Unauthorized admin access.",
+    }),
+  };
 }
 
 function randomToken(size = 16) {
@@ -330,6 +507,12 @@ module.exports = {
   sanitizeText,
   getSupabaseAdmin,
   requireAdmin,
+  getAdminCredentials,
+  verifyAdminCredentials,
+  getAdminSessionFromEvent,
+  createAdminSessionToken,
+  buildAdminSessionCookie,
+  clearAdminSessionCookie,
   randomToken,
   buildRecognitionFolio,
   slugify,

@@ -1,14 +1,26 @@
 const state = {
   adminKey: "",
+  isAuthenticated: false,
+  sessionEmail: "",
   users: [],
   alerts: [],
   overview: null,
   loading: false,
 };
+
 const REQUEST_TIMEOUT_MS = 45000;
 const QUIZ_TOTAL_QUESTIONS = 7;
 
 const refs = {
+  adminLoginSection: document.querySelector("#adminLoginSection"),
+  adminSecureArea: document.querySelector("#adminSecureArea"),
+  adminLoginForm: document.querySelector("#adminLoginForm"),
+  adminEmail: document.querySelector("#adminEmail"),
+  adminPassword: document.querySelector("#adminPassword"),
+  adminLoginBtn: document.querySelector("#adminLoginBtn"),
+  adminLoginMessage: document.querySelector("#adminLoginMessage"),
+  logoutBtn: document.querySelector("#logoutBtn"),
+
   accessInfo: document.querySelector("#accessInfo"),
   accessError: document.querySelector("#accessError"),
 
@@ -32,46 +44,150 @@ const refs = {
   usersTableBody: document.querySelector("#usersTableBody"),
 };
 
-function init() {
-  const params = new URLSearchParams(window.location.search);
-  state.adminKey = (params.get("key") || "").trim();
+async function init() {
+  bindEvents();
 
-  if (!state.adminKey) {
-    refs.accessInfo.textContent = "Acceso bloqueado: agrega la llave en el query string.";
-    refs.accessError.classList.remove("hidden");
-    disableActions();
+  const params = new URLSearchParams(window.location.search);
+  state.adminKey = String(params.get("key") || "").trim();
+
+  if (state.adminKey) {
+    state.isAuthenticated = true;
+    showSecurePanel("Acceso validado por llave de administrador en URL.");
+    await refreshAll();
     return;
   }
 
-  refs.accessInfo.textContent = "Acceso admin validado por llave en URL.";
-  bindEvents();
-  refreshAll();
+  await restoreSession();
 }
 
 function bindEvents() {
-  refs.refreshBtn.addEventListener("click", refreshAll);
-  refs.statusFilter.addEventListener("change", loadUsers);
-  refs.downloadZipBtn.addEventListener("click", downloadZip);
+  refs.refreshBtn?.addEventListener("click", refreshAll);
+  refs.statusFilter?.addEventListener("change", loadUsers);
+  refs.downloadZipBtn?.addEventListener("click", downloadZip);
 
-  refs.addUserForm.addEventListener("submit", async (event) => {
+  refs.addUserForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     await createUser();
   });
+
+  refs.adminLoginForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await loginAdmin();
+  });
+
+  refs.logoutBtn?.addEventListener("click", async () => {
+    await logoutAdmin();
+  });
+}
+
+async function restoreSession() {
+  showLoginPanel("Verificando sesión...");
+
+  try {
+    const payload = await apiRequest("/api/admin/auth/session", {
+      skipAuthReset: true,
+    });
+
+    if (payload?.authenticated) {
+      state.sessionEmail = String(payload.email || "").trim();
+      state.isAuthenticated = true;
+      const emailText = state.sessionEmail ? ` (${state.sessionEmail})` : "";
+      showSecurePanel(`Sesión activa${emailText}.`);
+      await refreshAll();
+      return;
+    }
+  } catch {
+    // Continue to login state.
+  }
+
+  state.isAuthenticated = false;
+  state.sessionEmail = "";
+  showLoginPanel("Inicia sesión para acceder al panel administrativo.");
+}
+
+function showLoginPanel(message = "") {
+  refs.adminLoginSection?.classList.remove("hidden");
+  refs.adminSecureArea?.classList.add("hidden");
+  disableActions();
+  setLoginMessage(message, false);
+
+  if (refs.accessError) {
+    refs.accessError.classList.add("hidden");
+    refs.accessError.textContent = "";
+  }
+
+  if (refs.accessInfo) {
+    refs.accessInfo.textContent = "";
+  }
+}
+
+function showSecurePanel(message = "") {
+  refs.adminLoginSection?.classList.add("hidden");
+  refs.adminSecureArea?.classList.remove("hidden");
+  setLoginMessage("", false);
+  enableActions();
+
+  if (refs.accessInfo) {
+    refs.accessInfo.textContent = message || "Sesión admin activa.";
+  }
+
+  if (refs.accessError) {
+    refs.accessError.classList.add("hidden");
+    refs.accessError.textContent = "";
+  }
+}
+
+function enableActions() {
+  refs.refreshBtn.disabled = false;
+  refs.downloadZipBtn.disabled = false;
+  const submitButton = refs.addUserForm?.querySelector("button[type='submit']");
+  if (submitButton) {
+    submitButton.disabled = false;
+  }
 }
 
 function disableActions() {
   refs.refreshBtn.disabled = true;
   refs.downloadZipBtn.disabled = true;
-  refs.addUserForm.querySelector("button[type='submit']").disabled = true;
+  const submitButton = refs.addUserForm?.querySelector("button[type='submit']");
+  if (submitButton) {
+    submitButton.disabled = true;
+  }
+}
+
+function resetAuthState(message) {
+  state.isAuthenticated = false;
+  state.sessionEmail = "";
+  state.loading = false;
+
+  if (refs.accessError) {
+    refs.accessError.textContent = message || "Sesión expirada. Inicia sesión nuevamente.";
+    refs.accessError.classList.remove("hidden");
+  }
+
+  showLoginPanel("Tu sesión expiró. Ingresa de nuevo para continuar.");
 }
 
 function buildApiUrl(path) {
+  if (!state.adminKey) {
+    return path;
+  }
+
   const prefix = path.includes("?") ? "&" : "?";
   return `${path}${prefix}key=${encodeURIComponent(state.adminKey)}`;
 }
 
 function setAdminMessage(message) {
   refs.addUserMessage.textContent = message || "";
+}
+
+function setLoginMessage(message, isError = false) {
+  if (!refs.adminLoginMessage) {
+    return;
+  }
+
+  refs.adminLoginMessage.textContent = message || "";
+  refs.adminLoginMessage.classList.toggle("error", Boolean(isError && message));
 }
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
@@ -81,6 +197,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = REQUEST_TIMEOUT_M
   try {
     return await fetch(url, {
       ...options,
+      credentials: "include",
       signal: controller.signal,
     });
   } catch (error) {
@@ -119,6 +236,11 @@ async function apiRequest(path, options = {}) {
     } catch {
       // no-op
     }
+
+    if (response.status === 401 && !state.adminKey && !options.skipAuthReset) {
+      resetAuthState(message);
+    }
+
     throw new Error(message);
   }
 
@@ -126,10 +248,85 @@ async function apiRequest(path, options = {}) {
   if (contentType.includes("application/json")) {
     return response.json();
   }
+
   return response.blob();
 }
 
+async function loginAdmin() {
+  const email = String(refs.adminEmail?.value || "").trim();
+  const password = String(refs.adminPassword?.value || "");
+
+  if (!email) {
+    setLoginMessage("Captura el correo de administrador.", true);
+    return;
+  }
+
+  if (!password) {
+    setLoginMessage("Captura la contraseña.", true);
+    return;
+  }
+
+  const originalText = refs.adminLoginBtn?.textContent || "Entrar al panel";
+  if (refs.adminLoginBtn) {
+    refs.adminLoginBtn.disabled = true;
+    refs.adminLoginBtn.textContent = "Validando...";
+  }
+
+  try {
+    setLoginMessage("Validando credenciales...");
+
+    const payload = await apiRequest("/api/admin/auth/login", {
+      method: "POST",
+      body: {
+        email,
+        password,
+      },
+      skipAuthReset: true,
+    });
+
+    state.isAuthenticated = true;
+    state.sessionEmail = String(payload?.email || email).trim().toLowerCase();
+    const emailText = state.sessionEmail ? ` (${state.sessionEmail})` : "";
+    showSecurePanel(`Sesión activa${emailText}.`);
+
+    if (refs.adminLoginForm) {
+      refs.adminLoginForm.reset();
+    }
+
+    await refreshAll();
+  } catch (err) {
+    setLoginMessage(`Acceso denegado: ${err.message}`, true);
+  } finally {
+    if (refs.adminLoginBtn) {
+      refs.adminLoginBtn.disabled = false;
+      refs.adminLoginBtn.textContent = originalText;
+    }
+  }
+}
+
+async function logoutAdmin() {
+  try {
+    if (!state.adminKey) {
+      await apiRequest("/api/admin/auth/logout", {
+        method: "POST",
+        skipAuthReset: true,
+      });
+    }
+  } catch {
+    // no-op
+  }
+
+  state.adminKey = "";
+  const cleanUrl = `${window.location.pathname}`;
+  window.history.replaceState({}, document.title, cleanUrl);
+  showLoginPanel("Sesión cerrada correctamente.");
+}
+
 async function refreshAll() {
+  if (!state.isAuthenticated) {
+    return;
+  }
+
   try {
     setLoading(true);
     await Promise.all([loadOverview(), loadUsers()]);
@@ -212,7 +409,7 @@ function renderUsers() {
                 class="small-btn small-btn-danger"
                 data-action="delete-user"
                 data-user-id="${escapeHtml(userId)}"
-                data-user-name="${escapeHtml(row.nombre || "")}"
+                data-user-name="${escapeHtml(row.nombre || "")}" 
                 data-user-code="${escapeHtml(code)}"
               >
                 Eliminar
@@ -422,4 +619,4 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-init();
+void init();

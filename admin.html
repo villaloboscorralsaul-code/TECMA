@@ -22,105 +22,133 @@
         </div>
       </header>
 
-      <section class="admin-card">
-        <h2>Acceso Admin</h2>
-        <p id="accessInfo" class="hint"></p>
-        <p id="accessError" class="error hidden">
-          Falta la llave admin en la URL. Usa: <code>/admin?key=TU_LLAVE</code>
-        </p>
-      </section>
+      <section id="adminLoginSection" class="login-shell">
+        <article class="login-card">
+          <p class="login-kicker">Acceso Seguro</p>
+          <h2>Iniciar sesión de administrador</h2>
+          <p class="hint">Este acceso es exclusivo para el panel administrativo de TECMA.</p>
 
-      <section class="kpi-grid admin-card">
-        <article class="kpi">
-          <p>Total usuarios</p>
-          <strong id="kpiTotal">0</strong>
-        </article>
-        <article class="kpi">
-          <p>Pendientes</p>
-          <strong id="kpiPendiente">0</strong>
-        </article>
-        <article class="kpi">
-          <p>En proceso</p>
-          <strong id="kpiProceso">0</strong>
-        </article>
-        <article class="kpi">
-          <p>No aprobado</p>
-          <strong id="kpiNoAprobado">0</strong>
-        </article>
-        <article class="kpi kpi-success">
-          <p>Completados</p>
-          <strong id="kpiCompletado">0</strong>
+          <form id="adminLoginForm" class="login-form">
+            <label for="adminEmail">Correo</label>
+            <input
+              id="adminEmail"
+              type="email"
+              autocomplete="username"
+              placeholder="tecma@adminpanel.com"
+              required
+            />
+
+            <label for="adminPassword">Contraseña</label>
+            <input id="adminPassword" type="password" autocomplete="current-password" required />
+
+            <button id="adminLoginBtn" type="submit" class="btn btn-primary">Entrar al panel</button>
+          </form>
+          <p id="adminLoginMessage" class="hint"></p>
         </article>
       </section>
 
-      <section class="admin-card">
-        <div class="alerts-head">
-          <h2>Alertas del Proceso</h2>
-          <p class="hint">Registros de no aprobados e inconclusos para seguimiento inmediato.</p>
-        </div>
-        <p id="alertsSummary" class="hint"></p>
-        <div id="alertsList" class="alerts-list"></div>
-      </section>
+      <div id="adminSecureArea" class="hidden">
+        <section class="admin-card access-card">
+          <div>
+            <h2>Acceso Admin</h2>
+            <p id="accessInfo" class="hint"></p>
+            <p id="accessError" class="error hidden"></p>
+          </div>
+          <button id="logoutBtn" type="button" class="btn btn-secondary">Cerrar sesión</button>
+        </section>
 
-      <section class="admin-card">
-        <h2>Alta Manual de Usuario</h2>
-        <form id="addUserForm" class="form-grid">
-          <label>
-            Nombre completo
-            <input id="newUserName" type="text" maxlength="120" required />
-          </label>
-          <label>
-            Número de empleado (obligatorio)
-            <input id="newUserCode" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="20" required />
-          </label>
-          <label>
-            Área (opcional)
-            <input id="newUserArea" type="text" maxlength="120" />
-          </label>
-          <button type="submit" class="btn btn-primary">Agregar usuario</button>
-        </form>
-        <p id="addUserMessage" class="hint"></p>
-      </section>
+        <section class="kpi-grid admin-card">
+          <article class="kpi">
+            <p>Total usuarios</p>
+            <strong id="kpiTotal">0</strong>
+          </article>
+          <article class="kpi">
+            <p>Pendientes</p>
+            <strong id="kpiPendiente">0</strong>
+          </article>
+          <article class="kpi">
+            <p>En proceso</p>
+            <strong id="kpiProceso">0</strong>
+          </article>
+          <article class="kpi">
+            <p>No aprobado</p>
+            <strong id="kpiNoAprobado">0</strong>
+          </article>
+          <article class="kpi kpi-success">
+            <p>Completados</p>
+            <strong id="kpiCompletado">0</strong>
+          </article>
+        </section>
 
-      <section class="admin-card">
-        <div class="toolbar">
-          <div class="toolbar-group">
-            <label for="statusFilter">Filtro de estado</label>
-            <select id="statusFilter">
-              <option value="ALL">Todos</option>
-              <option value="PENDIENTE">Pendiente</option>
-              <option value="EN_PROCESO">En proceso</option>
-              <option value="NO_APROBADO">No aprobado</option>
-              <option value="COMPLETADO">Completado</option>
-            </select>
+        <section class="admin-card">
+          <div class="alerts-head">
+            <h2>Alertas del Proceso</h2>
+            <p class="hint">Registros de no aprobados e inconclusos para seguimiento inmediato.</p>
+          </div>
+          <p id="alertsSummary" class="hint"></p>
+          <div id="alertsList" class="alerts-list"></div>
+        </section>
+
+        <section class="admin-card">
+          <h2>Alta Manual de Usuario</h2>
+          <form id="addUserForm" class="form-grid">
+            <label>
+              Nombre completo
+              <input id="newUserName" type="text" maxlength="120" required />
+            </label>
+            <label>
+              Número de empleado (obligatorio)
+              <input id="newUserCode" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="20" required />
+            </label>
+            <label>
+              Área (opcional)
+              <input id="newUserArea" type="text" maxlength="120" />
+            </label>
+            <button type="submit" class="btn btn-primary">Agregar usuario</button>
+          </form>
+          <p id="addUserMessage" class="hint"></p>
+        </section>
+
+        <section class="admin-card">
+          <div class="toolbar">
+            <div class="toolbar-group">
+              <label for="statusFilter">Filtro de estado</label>
+              <select id="statusFilter">
+                <option value="ALL">Todos</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="EN_PROCESO">En proceso</option>
+                <option value="NO_APROBADO">No aprobado</option>
+                <option value="COMPLETADO">Completado</option>
+              </select>
+            </div>
+
+            <div class="toolbar-actions">
+              <button id="refreshBtn" type="button" class="btn btn-secondary">Actualizar</button>
+              <button id="downloadZipBtn" type="button" class="btn btn-primary">
+                Descargar ZIP de reconocimientos completados
+              </button>
+            </div>
           </div>
 
-          <div class="toolbar-actions">
-            <button id="refreshBtn" type="button" class="btn btn-secondary">Actualizar</button>
-            <button id="downloadZipBtn" type="button" class="btn btn-primary">
-              Descargar ZIP de reconocimientos completados
-            </button>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Código</th>
+                  <th>Área</th>
+                  <th>Estado</th>
+                  <th>Score</th>
+                  <th>Intentos</th>
+                  <th>Folio</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
           </div>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Código</th>
-                <th>Área</th>
-                <th>Estado</th>
-                <th>Score</th>
-                <th>Intentos</th>
-                <th>Folio</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="usersTableBody"></tbody>
-          </table>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
 
     <script src="admin.js"></script>

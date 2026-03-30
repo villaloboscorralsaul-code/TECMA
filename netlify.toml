@@ -26,6 +26,21 @@
   status = 200
 
 [[redirects]]
+  from = "/api/admin/auth/login"
+  to = "/.netlify/functions/admin-auth-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/auth/session"
+  to = "/.netlify/functions/admin-auth-session"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/auth/logout"
+  to = "/.netlify/functions/admin-auth-logout"
+  status = 200
+
+[[redirects]]
   from = "/api/session/start"
   to = "/.netlify/functions/session-start"
   status = 200
