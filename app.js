@@ -122,6 +122,7 @@ const state = {
   acceptedAt: null,
 
   folio: "",
+  recognitionId: "",
   recognitionDownloadUrl: "",
   recognitionVerifyUrl: "",
   recognitionIssuedAt: "",
@@ -1002,6 +1003,7 @@ function renderRecognition(recognition) {
   }).format(issuedAt);
 
   state.folio = String(recognition.folio || "").trim() || createFallbackRecognitionFolio(issuedAt);
+  state.recognitionId = String(recognition.id || "").trim();
   state.recognitionDownloadUrl = String(recognition.download_url || "").trim();
   state.recognitionVerifyUrl = String(recognition.verify_url || "").trim();
   state.recognitionIssuedAt = issuedAt.toISOString();
@@ -1060,7 +1062,37 @@ function cacheRecognitionRecord() {
 }
 
 function handleDownloadRecognition() {
+  const recognitionId = String(state.recognitionId || "").trim();
+  const token = extractVerifyToken(state.recognitionVerifyUrl);
+
+  if (recognitionId) {
+    const params = new URLSearchParams({
+      id: recognitionId,
+      mode: "download",
+    });
+    if (token) {
+      params.set("token", token);
+    }
+
+    window.open(`/recognition-document.html?${params.toString()}`, "_blank", "noopener,noreferrer");
+    return;
+  }
+
   window.print();
+}
+
+function extractVerifyToken(verifyUrl) {
+  const source = String(verifyUrl || "").trim();
+  if (!source) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(source, window.location.origin);
+    return String(parsed.searchParams.get("token") || "").trim();
+  } catch {
+    return "";
+  }
 }
 
 function createFallbackRecognitionFolio(dateObj) {

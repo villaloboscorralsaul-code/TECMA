@@ -66,6 +66,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/recognitions/detail"
+  to = "/.netlify/functions/recognitions-detail"
+  status = 200
+
+[[redirects]]
   from = "/api/recognitions/verify"
   to = "/.netlify/functions/recognitions-verify"
   status = 200
@@ -83,6 +88,16 @@
 [[redirects]]
   from = "/admin/"
   to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/recognition-document"
+  to = "/recognition-document.html"
+  status = 200
+
+[[redirects]]
+  from = "/recognition-document/"
+  to = "/recognition-document.html"
   status = 200
 
 [[redirects]]

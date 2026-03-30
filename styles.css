@@ -866,6 +866,9 @@ p {
   background: #fff;
   padding: 14px;
   overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto auto;
+  align-content: start;
 }
 
 .recognition-document::before {
@@ -926,6 +929,24 @@ p {
   object-fit: contain;
 }
 
+.recognition-corner-logo {
+  width: 140px;
+  height: 50px;
+  border-radius: 10px;
+  border: 1px solid rgba(26, 43, 76, 0.25);
+  background: #f2f6ff;
+  padding: 6px 9px;
+  display: grid;
+  place-items: center;
+}
+
+.recognition-corner-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: grayscale(0.9) sepia(0.4) hue-rotate(170deg) saturate(2.3) brightness(0.72);
+}
+
 .recognition-title {
   margin: 14px 0 12px;
   text-align: center;
@@ -939,6 +960,7 @@ p {
   grid-template-columns: 1fr;
   gap: 12px;
   align-items: start;
+  min-height: 290px;
 }
 
 .recognition-text {
@@ -953,21 +975,22 @@ p {
   border: 1px solid #cfd8e8;
   border-radius: 12px;
   background: #f7faff;
-  padding: 9px;
+  padding: 11px;
   text-align: center;
+  min-width: 194px;
 }
 
 .recognition-photo {
-  width: 124px;
-  height: 150px;
+  width: 170px;
+  height: 220px;
   object-fit: cover;
   border-radius: 10px;
   border: 2px solid var(--tecma-navy);
 }
 
 .recognition-photo-empty {
-  width: 124px;
-  height: 150px;
+  width: 170px;
+  height: 220px;
   border-radius: 10px;
   border: 2px dashed #aeb9ce;
   display: grid;
@@ -1059,6 +1082,32 @@ p {
   gap: 8px;
   font-size: 0.74rem;
   color: #4a5d7e;
+}
+
+.recognition-page {
+  margin: 0;
+  min-height: 100vh;
+  background: #eef3fb;
+  padding: 18px;
+}
+
+.recognition-page-shell {
+  width: min(98vw, 1160px);
+  margin: 0 auto;
+}
+
+.recognition-page .recognition-panel {
+  padding: 10px;
+}
+
+.recognition-page .recognition-document {
+  width: min(98vw, 1080px);
+  min-height: 760px;
+  margin: 0 auto;
+}
+
+.recognition-page .recognition-text {
+  min-height: 280px;
 }
 
 #recognitionQr {
@@ -1155,8 +1204,8 @@ p {
 
 @media print {
   @page {
-    size: Letter portrait;
-    margin: 0.34in;
+    size: Letter landscape;
+    margin: 0.24in;
   }
 
   html,
@@ -1175,7 +1224,13 @@ p {
   }
 
   #recognitionStep,
-  #recognitionStep * {
+  #recognitionStep *,
+  #recognitionDocumentHost,
+  #recognitionDocumentHost * {
+    visibility: visible;
+  }
+
+  body.recognition-page * {
     visibility: visible;
   }
 
@@ -1194,6 +1249,22 @@ p {
   #recognitionStep {
     display: block !important;
     position: static !important;
+  }
+
+  .recognition-page .recognition-page-shell,
+  .recognition-page .recognition-panel {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  .recognition-page .no-print {
+    display: none !important;
+    visibility: hidden !important;
   }
 
   .app-shell {
@@ -1222,15 +1293,15 @@ p {
   }
 
   .recognition-document {
-    width: 100% !important;
+    width: 267mm !important;
     max-width: none !important;
     margin: 0 !important;
     box-sizing: border-box;
     border-radius: 0 !important;
     border: 1.5px solid #1a2b4c !important;
-    min-height: 10.15in;
+    min-height: 186mm;
     height: auto !important;
-    padding: 0.22in !important;
+    padding: 0.18in !important;
     overflow: hidden !important;
     box-shadow: none !important;
     break-inside: avoid;
@@ -1266,68 +1337,65 @@ p {
     border-radius: 10px;
   }
 
-  .flag-group {
-    gap: 0.06in;
-  }
-
-  .flag {
-    min-width: 0.68in;
-    height: 0.32in;
-    padding: 0 0.08in;
-    font-size: 9.5px;
+  .recognition-corner-logo {
+    width: 1.72in;
+    height: 0.6in;
+    padding: 0.06in 0.08in;
+    border-radius: 8px;
   }
 
   .recognition-title {
-    margin: 0.13in 0 0.1in !important;
-    font-size: 18px !important;
+    margin: 0.12in 0 0.09in !important;
+    font-size: 22px !important;
     line-height: 1.2;
   }
 
   .recognition-identity-row {
-    grid-template-columns: 1fr 1.95in !important;
-    gap: 0.14in !important;
+    grid-template-columns: 1fr 2.55in !important;
+    gap: 0.16in !important;
     align-items: start;
+    min-height: 3.48in;
   }
 
   .recognition-text {
-    font-size: 10.8pt !important;
-    line-height: 1.5 !important;
+    font-size: 11.2pt !important;
+    line-height: 1.46 !important;
   }
 
   .recognition-photo-wrap {
-    width: 1.95in;
-    padding: 0.08in;
+    width: 2.55in;
+    padding: 0.1in;
     border-radius: 10px;
   }
 
   .recognition-photo,
   .recognition-photo-empty {
-    width: 1.58in;
-    height: 2.02in;
+    width: 2.15in;
+    height: 2.86in;
     margin: 0 auto;
   }
 
   .recognition-photo-wrap figcaption {
-    margin-top: 0.05in;
-    font-size: 8.3pt;
+    margin-top: 0.06in;
+    font-size: 8.8pt;
   }
 
   .recognition-meta {
-    margin-top: 0.12in !important;
-    padding-top: 0.08in !important;
+    margin-top: 0.09in !important;
+    padding-top: 0.07in !important;
     gap: 0.04in !important;
-    font-size: 10.5pt !important;
+    font-size: 10.8pt !important;
   }
 
   .recognition-signature-row {
-    margin-top: 0.18in !important;
+    margin-top: 0.12in !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 0.22in !important;
+    gap: 0.28in !important;
   }
 
   .signature-box {
     min-height: 0 !important;
-    font-size: 10.5pt !important;
+    font-size: 10.8pt !important;
   }
 
   .signature-line {
@@ -1335,8 +1403,8 @@ p {
   }
 
   .recognition-footer {
-    margin-top: 0.12in !important;
-    padding-top: 0.08in !important;
+    margin-top: 0.08in !important;
+    padding-top: 0.07in !important;
     grid-template-columns: 1fr auto !important;
     gap: 0.08in !important;
     align-items: center !important;
@@ -1348,8 +1416,8 @@ p {
   }
 
   #recognitionQr {
-    width: 0.9in !important;
-    height: 0.9in !important;
+    width: 0.84in !important;
+    height: 0.84in !important;
     border-width: 2px !important;
   }
 

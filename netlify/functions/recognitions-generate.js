@@ -757,7 +757,7 @@ async function buildRecognitionPdf({
   legacyPdfBytes = null,
 }) {
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([612, 792]); // Letter portrait
+  const page = pdfDoc.addPage([792, 612]); // Letter landscape
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
@@ -803,10 +803,10 @@ async function buildRecognitionPdf({
 
   void legacyPdfBytes;
 
-  const doc = { x: 24, y: 24, width: 564, height: 744 };
+  const doc = { x: 20, y: 18, width: 752, height: 576 };
   const content = { x: doc.x + 16, y: doc.y + 16, width: doc.width - 32, height: doc.height - 32 };
 
-  page.drawRectangle({ x: 0, y: 0, width: 612, height: 792, color: colors.page });
+  page.drawRectangle({ x: 0, y: 0, width: 792, height: 612, color: colors.page });
   page.drawRectangle({
     x: doc.x,
     y: doc.y,
@@ -828,9 +828,9 @@ async function buildRecognitionPdf({
     });
   }
 
-  const logosTopY = doc.y + doc.height - 18;
-  const logoCard = { x: content.x, y: logosTopY - 68, width: 176, height: 68 };
-  const badgeCard = { x: logoCard.x + logoCard.width + 10, y: logosTopY - 63, width: 60, height: 60 };
+  const logosTopY = doc.y + doc.height - 16;
+  const logoCard = { x: content.x, y: logosTopY - 72, width: 196, height: 72 };
+  const badgeCard = { x: logoCard.x + logoCard.width + 10, y: logosTopY - 67, width: 62, height: 62 };
 
   page.drawRectangle({
     x: logoCard.x,
@@ -871,51 +871,39 @@ async function buildRecognitionPdf({
     });
   }
 
-  const flagsWidth = 3 * 52 + 2 * 8;
-  const flagsX = content.x + content.width - flagsWidth;
-  const flagsY = logosTopY - 40;
-  drawFlagPill(page, {
-    x: flagsX,
-    y: flagsY,
-    label: "MEX",
-    type: "MEX",
-    font: fontBold,
-    textColor: colors.navy,
-    width: 52,
-    height: 24,
-    textSize: 8.6,
+  const cornerLogo = {
+    x: content.x + content.width - 164,
+    y: logosTopY - 56,
+    width: 164,
+    height: 56,
+  };
+  page.drawRectangle({
+    x: cornerLogo.x,
+    y: cornerLogo.y,
+    width: cornerLogo.width,
+    height: cornerLogo.height,
+    color: rgb(0.95, 0.97, 1),
+    borderColor: rgb(0.78, 0.82, 0.90),
+    borderWidth: 1,
   });
-  drawFlagPill(page, {
-    x: flagsX + 60,
-    y: flagsY,
-    label: "USA",
-    type: "USA",
-    font: fontBold,
-    textColor: colors.navy,
-    width: 52,
-    height: 24,
-    textSize: 8.6,
-  });
-  drawFlagPill(page, {
-    x: flagsX + 120,
-    y: flagsY,
-    label: "CAN",
-    type: "CAN",
-    font: fontBold,
-    textColor: colors.navy,
-    width: 52,
-    height: 24,
-    textSize: 8.6,
-  });
+  if (logoImage) {
+    const fittedCornerLogo = fitImageContain(logoImage, cornerLogo.width - 14, cornerLogo.height - 10);
+    page.drawImage(logoImage, {
+      x: cornerLogo.x + (cornerLogo.width - fittedCornerLogo.width) / 2,
+      y: cornerLogo.y + (cornerLogo.height - fittedCornerLogo.height) / 2,
+      width: fittedCornerLogo.width,
+      height: fittedCornerLogo.height,
+    });
+  }
 
   drawCenteredText(page, "RECONOCIMIENTO DE CUMPLIMIENTO DE POLÍTICA SOCIAL T-MEC", {
     font: fontBold,
-    size: 18,
+    size: 22,
     color: rgb(0.82, 0.44, 0.12),
-    y: logosTopY - 103,
+    y: logosTopY - 109,
   });
 
-  const photoCard = { x: content.x + content.width - 140, y: 416, width: 140, height: 218 };
+  const photoCard = { x: content.x + content.width - 196, y: 186, width: 196, height: 276 };
   page.drawRectangle({
     x: photoCard.x,
     y: photoCard.y,
@@ -926,41 +914,7 @@ async function buildRecognitionPdf({
     borderWidth: 1.1,
   });
 
-  drawFlagPill(page, {
-    x: photoCard.x + 12,
-    y: photoCard.y + photoCard.height - 33,
-    label: "MEX",
-    type: "MEX",
-    font: fontBold,
-    textColor: colors.navy,
-    width: 34,
-    height: 20,
-    textSize: 7.4,
-  });
-  drawFlagPill(page, {
-    x: photoCard.x + 52,
-    y: photoCard.y + photoCard.height - 33,
-    label: "USA",
-    type: "USA",
-    font: fontBold,
-    textColor: colors.navy,
-    width: 34,
-    height: 20,
-    textSize: 7.4,
-  });
-  drawFlagPill(page, {
-    x: photoCard.x + 92,
-    y: photoCard.y + photoCard.height - 33,
-    label: "CAN",
-    type: "CAN",
-    font: fontBold,
-    textColor: colors.navy,
-    width: 34,
-    height: 20,
-    textSize: 7.4,
-  });
-
-  const photoFrame = { x: photoCard.x + 16, y: photoCard.y + 58, width: 108, height: 132 };
+  const photoFrame = { x: photoCard.x + 17, y: photoCard.y + 56, width: 162, height: 204 };
   page.drawRectangle({
     x: photoFrame.x,
     y: photoFrame.y,
@@ -998,111 +952,111 @@ async function buildRecognitionPdf({
 
   drawCenteredTextInBox(page, "FOTOGRAFÍA DEL COLABORADOR", {
     font: fontBold,
-    size: 8.2,
+    size: 10.2,
     color: rgb(0.27, 0.35, 0.52),
     x: photoCard.x,
     width: photoCard.width,
-    y: photoCard.y + 13,
+    y: photoCard.y + 14,
   });
 
   const bodyText = `Por medio del presente se reconoce que ${safeEmployeeName}, colaborador(a) de TECMA Transportation Services S. de R.L. de C.V., realizó la lectura del documento y la visualización del video correspondiente a la Política Social, como parte de las actividades internas de difusión, conocimiento y fortalecimiento de la cultura de cumplimiento de la empresa con especial énfasis en la prevención del Trabajo Forzado e Infantil, en cumplimiento con el Capítulo 23 del Tratado del T-MEC.`;
   const textX = content.x;
   const textWidth = photoCard.x - textX - 16;
-  const textLines = wrapText(fontRegular, bodyText, 12, textWidth);
-  let textY = logosTopY - 155;
-  for (const line of textLines.slice(0, 14)) {
+  const textLines = wrapText(fontRegular, bodyText, 13, textWidth);
+  let textY = logosTopY - 150;
+  for (const line of textLines.slice(0, 10)) {
     page.drawText(line, {
       x: textX,
       y: textY,
-      size: 12,
+      size: 13,
       font: fontRegular,
       color: colors.text,
     });
-    textY -= 16.5;
+    textY -= 14.4;
   }
 
   drawDashedLine(page, {
     x1: content.x,
     x2: content.x + content.width,
-    y: 348,
+    y: 276,
     color: colors.line,
     thickness: 1.1,
   });
 
   page.drawText("Fecha de finalización:", {
     x: content.x,
-    y: 318,
-    size: 11.8,
+    y: 248,
+    size: 12.3,
     font: fontBold,
     color: colors.navy,
   });
   page.drawText(issuedDateLabel, {
     x: content.x + 138,
-    y: 318,
-    size: 11.8,
+    y: 248,
+    size: 12.3,
     font: fontRegular,
     color: colors.text,
   });
 
   page.drawText("Folio:", {
     x: content.x,
-    y: 284,
-    size: 11.8,
+    y: 216,
+    size: 12.3,
     font: fontBold,
     color: colors.navy,
   });
   page.drawText(displayFolio, {
     x: content.x + 42,
-    y: 284,
-    size: 11.8,
+    y: 216,
+    size: 12.3,
     font: fontRegular,
     color: colors.text,
   });
 
   page.drawLine({
-    start: { x: content.x, y: 206 },
-    end: { x: content.x + 180, y: 206 },
+    start: { x: content.x, y: 172 },
+    end: { x: content.x + 180, y: 172 },
     thickness: 1.2,
     color: colors.navySoft,
   });
   page.drawText("Comité de Cumplimiento Social T-MEC", {
     x: content.x,
-    y: 183,
-    size: 10.6,
+    y: 149,
+    size: 11.3,
     font: fontRegular,
     color: colors.text,
   });
 
-  const rightSigX = content.x + 260;
+  const rightSigX = content.x + 332;
   page.drawLine({
-    start: { x: rightSigX, y: 206 },
-    end: { x: rightSigX + 190, y: 206 },
+    start: { x: rightSigX, y: 172 },
+    end: { x: rightSigX + 200, y: 172 },
     thickness: 1.2,
     color: colors.navySoft,
   });
   page.drawText("GEORGINA SÁNCHEZ", {
     x: rightSigX,
-    y: 183,
-    size: 10.6,
+    y: 149,
+    size: 11.3,
     font: fontRegular,
     color: colors.text,
   });
   page.drawText("Representante Legal", {
     x: rightSigX,
-    y: 164,
-    size: 10.6,
+    y: 128,
+    size: 11.3,
     font: fontRegular,
     color: colors.text,
   });
 
   page.drawLine({
-    start: { x: content.x, y: 126 },
-    end: { x: content.x + content.width, y: 126 },
+    start: { x: content.x, y: 104 },
+    end: { x: content.x + content.width, y: 104 },
     thickness: 0.9,
     color: colors.line,
   });
 
-  const timelineY = 56;
+  const timelineY = 63;
   const dotsX = [content.x + 10, content.x + 90, content.x + 170];
   const dotColors = [rgb(0.04, 0.47, 0.34), rgb(0.20, 0.30, 0.56), rgb(0.84, 0.23, 0.20)];
   dotsX.forEach((dotX, idx) => {
@@ -1130,38 +1084,38 @@ async function buildRecognitionPdf({
     }
   });
 
-  const qrX = content.x + 220;
-  const qrY = 36;
+  const qrX = content.x + 280;
+  const qrY = 28;
   const verifyQrImage = await buildVerifyQrImage(pdfDoc, verifyUrl);
   if (verifyQrImage) {
     page.drawImage(verifyQrImage, {
       x: qrX,
       y: qrY,
-      width: 74,
-      height: 74,
+      width: 66,
+      height: 66,
     });
   }
   page.drawRectangle({
     x: qrX,
     y: qrY,
-    width: 74,
-    height: 74,
+    width: 66,
+    height: 66,
     borderColor: colors.navy,
     borderWidth: 1,
   });
 
   page.drawText("Verificación:", {
-    x: qrX + 82,
-    y: qrY + 58,
+    x: qrX + 74,
+    y: qrY + 52,
     size: 8.4,
     font: fontRegular,
     color: rgb(0.29, 0.36, 0.50),
   });
-  const verifyLines = wrapText(fontRegular, verifyUrl, 8, 190);
-  let verifyY = qrY + 45;
-  for (const line of verifyLines.slice(0, 4)) {
+  const verifyLines = wrapText(fontRegular, verifyUrl, 8, 250);
+  let verifyY = qrY + 39;
+  for (const line of verifyLines.slice(0, 3)) {
     page.drawText(line, {
-      x: qrX + 82,
+      x: qrX + 74,
       y: verifyY,
       size: 8,
       font: fontRegular,

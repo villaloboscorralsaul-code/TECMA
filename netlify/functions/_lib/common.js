@@ -223,13 +223,46 @@ function createAdminSessionToken({ email, ttlSeconds = getSessionTtlSeconds() })
   return `${payloadPart}.${signaturePart}`;
 }
 
+function shouldUseSecureAdminCookie() {
+  const rawSetting = String(process.env.ADMIN_SESSION_COOKIE_SECURE || "")
+    .trim()
+    .toLowerCase();
+
+  if (["1", "true", "yes"].includes(rawSetting)) {
+    return true;
+  }
+
+  if (["0", "false", "no"].includes(rawSetting)) {
+    return false;
+  }
+
+  const context = String(process.env.CONTEXT || "")
+    .trim()
+    .toLowerCase();
+  if (context) {
+    return context === "production";
+  }
+
+  const nodeEnv = String(process.env.NODE_ENV || "")
+    .trim()
+    .toLowerCase();
+  if (nodeEnv) {
+    return nodeEnv === "production";
+  }
+
+  const netlify = String(process.env.NETLIFY || "")
+    .trim()
+    .toLowerCase();
+  return netlify === "true";
+}
+
 function buildAdminSessionCookie(token, ttlSeconds = getSessionTtlSeconds()) {
-  const secureAttr = process.env.NODE_ENV === "development" ? "" : "Secure; ";
+  const secureAttr = shouldUseSecureAdminCookie() ? "Secure; " : "";
   return `${getSessionCookieName()}=${token}; Path=/; HttpOnly; ${secureAttr}SameSite=Lax; Max-Age=${ttlSeconds}`;
 }
 
 function clearAdminSessionCookie() {
-  const secureAttr = process.env.NODE_ENV === "development" ? "" : "Secure; ";
+  const secureAttr = shouldUseSecureAdminCookie() ? "Secure; " : "";
   return `${getSessionCookieName()}=; Path=/; HttpOnly; ${secureAttr}SameSite=Lax; Max-Age=0`;
 }
 

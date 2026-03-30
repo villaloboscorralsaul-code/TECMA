@@ -406,6 +406,15 @@ function renderUsers() {
                 Descargar
               </button>
               <button
+                class="small-btn"
+                data-action="print-one"
+                data-recognition-id="${recognitionId}"
+                data-recognition-folio="${escapeHtml(recognitionFolio)}"
+                ${recognitionBtnDisabled}
+              >
+                Imprimir
+              </button>
+              <button
                 class="small-btn small-btn-danger"
                 data-action="delete-user"
                 data-user-id="${escapeHtml(userId)}"
@@ -427,6 +436,15 @@ function renderUsers() {
       const recognitionFolio = String(button.getAttribute("data-recognition-folio") || "").trim();
       if (!recognitionId && !recognitionFolio) return;
       await downloadOne(recognitionId, recognitionFolio, button);
+    });
+  });
+
+  refs.usersTableBody.querySelectorAll("[data-action='print-one']").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const recognitionId = normalizeRecognitionId(button.getAttribute("data-recognition-id"));
+      const recognitionFolio = String(button.getAttribute("data-recognition-folio") || "").trim();
+      if (!recognitionId && !recognitionFolio) return;
+      await printOne(recognitionId, recognitionFolio, button);
     });
   });
 
@@ -526,17 +544,12 @@ async function downloadOne(recognitionId, recognitionFolio, triggerButton) {
   }
 
   try {
-    setAdminMessage("Preparando PDF de reconocimiento...");
-    const routeId = safeRecognitionId || "lookup";
-    const queryParts = ["direct=1"];
-    if (safeRecognitionFolio) {
-      queryParts.push(`folio=${encodeURIComponent(safeRecognitionFolio)}`);
-    }
-    const directUrl = buildApiUrl(
-      `/api/recognitions/${encodeURIComponent(routeId)}/download?${queryParts.join("&")}`
-    );
-
-    openDownloadUrl(directUrl);
+    setAdminMessage("Abriendo descarga con plantilla estandarizada...");
+    openRecognitionDocument({
+      mode: "download",
+      recognitionId: safeRecognitionId,
+      recognitionFolio: safeRecognitionFolio,
+    });
     setAdminMessage("Descarga iniciada.");
   } catch (err) {
     setAdminMessage(`Error al descargar reconocimiento: ${err.message}`);
@@ -546,6 +559,54 @@ async function downloadOne(recognitionId, recognitionFolio, triggerButton) {
       triggerButton.textContent = originalText;
     }
   }
+}
+
+async function printOne(recognitionId, recognitionFolio, triggerButton) {
+  const safeRecognitionId = normalizeRecognitionId(recognitionId);
+  const safeRecognitionFolio = String(recognitionFolio || "").trim();
+  if (!safeRecognitionId && !safeRecognitionFolio) {
+    setAdminMessage("El reconocimiento seleccionado no tiene identificador válido para imprimir.");
+    return;
+  }
+
+  const originalText = triggerButton ? triggerButton.textContent : "Imprimir";
+  if (triggerButton) {
+    triggerButton.disabled = true;
+    triggerButton.textContent = "Abriendo...";
+  }
+
+  try {
+    setAdminMessage("Abriendo plantilla estandarizada para impresión...");
+    openRecognitionDocument({
+      mode: "print",
+      recognitionId: safeRecognitionId,
+      recognitionFolio: safeRecognitionFolio,
+    });
+  } catch (err) {
+    setAdminMessage(`Error al imprimir reconocimiento: ${err.message}`);
+  } finally {
+    if (triggerButton) {
+      triggerButton.disabled = false;
+      triggerButton.textContent = originalText;
+    }
+  }
+}
+
+function openRecognitionDocument({ mode = "preview", recognitionId = "", recognitionFolio = "" }) {
+  const params = new URLSearchParams();
+  params.set("mode", mode);
+
+  if (recognitionId) {
+    params.set("id", recognitionId);
+  } else if (recognitionFolio) {
+    params.set("folio", recognitionFolio);
+  }
+
+  if (state.adminKey) {
+    params.set("key", state.adminKey);
+  }
+
+  openDownloadUrl(`/recognition-document.html?${params.toString()}`);
 }
 
 function normalizeRecognitionId(value) {
@@ -598,7 +659,7 @@ async function downloadZip() {
     refs.downloadZipBtn.textContent = "Abriendo descarga...";
     setAdminMessage("Se abrirá una pestaña para preparar el ZIP.");
 
-    const zipUrl = buildApiUrl("/api/recognitions/export-zip");
+    const zipUrl = buildApiUrl("/api/recognitions/export-zip?refresh=1");
     openDownloadUrl(zipUrl);
   } catch (err) {
     setAdminMessage(`Error ZIP: ${err.message}`);
