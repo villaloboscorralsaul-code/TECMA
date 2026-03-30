@@ -183,9 +183,7 @@ function renderRecognition(recognition) {
 }
 
 async function downloadAsPdf(recognition) {
-  if (!window.html2pdf) {
-    throw new Error("html2pdf no está disponible para generar el PDF.");
-  }
+  await ensureHtml2Pdf();
 
   const printArea = document.querySelector("#recognitionPrintArea");
   if (!printArea) {
@@ -215,6 +213,55 @@ async function downloadAsPdf(recognition) {
   };
 
   await window.html2pdf().set(options).from(printArea).save();
+}
+
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-src="${src}"]`);
+    if (existing) {
+      if (window.html2pdf) {
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error(`No se pudo cargar ${src}`)), {
+        once: true,
+      });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`No se pudo cargar ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+async function ensureHtml2Pdf() {
+  if (window.html2pdf) {
+    return;
+  }
+
+  const candidates = [
+    "/assets/vendor/html2pdf.bundle.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js",
+  ];
+
+  for (const src of candidates) {
+    try {
+      await loadScriptOnce(src);
+      if (window.html2pdf) {
+        return;
+      }
+    } catch {
+      // Try next source.
+    }
+  }
+
+  throw new Error("html2pdf no está disponible para generar el PDF.");
 }
 
 async function initRecognitionDocument() {
